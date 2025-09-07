@@ -10,8 +10,9 @@ import click
 import json
 from . import extraction
 from . import loading
+from . import transformation
 from . import validation
-from .config import get_logger
+from .config import get_logger, settings
 
 logger = get_logger(__name__)
 
@@ -67,6 +68,33 @@ def load_csv(batch_size):
         logger.info("CLI: LOAD CSV process completed successfully.")
     except Exception as e:
         logger.error(f"CLI: An error occurred during the LOAD CSV process: {e}")
+
+@cli.command()
+@click.option('--chunk-size', default=settings.TRANSFORMATION_CHUNK_SIZE, show_default=True, type=int, help='Number of rows to process per chunk for large files.')
+@click.option('--import-dir', default='bulk_import', show_default=True, type=click.Path(), help='Directory to save the formatted files for neo4j-admin import.')
+def prepare_bulk(chunk_size, import_dir):
+    """
+    Prepares data files for the offline neo4j-admin import tool.
+    This is the recommended method for very large datasets.
+    """
+    logger.info("CLI: Starting bulk import preparation process...")
+    try:
+        command = transformation.prepare_for_bulk_import(
+            chunk_size=chunk_size,
+            import_dir=import_dir
+        )
+        logger.info("CLI: Bulk import preparation completed successfully.")
+        click.secho("--- Neo4j-Admin Import Command ---", fg="green", bold=True)
+        click.secho("1. Stop the Neo4j database service.", fg="yellow")
+        click.secho(f"2. Run the following command from your terminal:", fg="yellow")
+        click.echo(command)
+        click.secho("\n3. After the import is complete, start the Neo4j service.", fg="yellow")
+        click.secho("4. Run `omop2neo4j create-indexes` to build the database schema.", fg="yellow")
+
+    except Exception as e:
+        logger.error(f"CLI: An error occurred during bulk import preparation: {e}")
+        click.secho(f"Error during preparation: {e}", fg="red")
+
 
 @cli.command()
 def create_indexes():
