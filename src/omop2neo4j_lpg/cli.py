@@ -1,6 +1,12 @@
 import click
 from .config import logger, settings
 from .extraction import export_tables_to_csv
+from .loading import (
+    get_driver,
+    clear_database,
+    create_constraints_and_indexes,
+    run_load_csv,
+)
 
 @click.group()
 @click.version_option()
@@ -19,9 +25,7 @@ def extract():
     try:
         logger.info(f"Using PostgreSQL schema: {settings.OMOP_SCHEMA}")
         logger.info(f"Exporting to directory: {settings.EXPORT_DIR}")
-
         export_tables_to_csv()
-
         logger.info("CLI 'extract' command completed successfully.")
         click.echo("Extraction completed successfully. Check logs for details.")
     except Exception as e:
@@ -31,20 +35,33 @@ def extract():
 @main.command()
 def clear_db():
     """
-    (Not Implemented) Clears the Neo4j database.
+    Clears the Neo4j database (deletes all nodes, relationships, indexes, constraints).
     """
-    logger.warning("Command 'clear-db' is not yet implemented.")
-    click.echo("Command 'clear-db' is not yet implemented.")
+    logger.info("CLI 'clear-db' command initiated.")
+    try:
+        driver = get_driver()
+        clear_database(driver)
+        driver.close()
+        logger.info("CLI 'clear-db' command completed successfully.")
+        click.echo("Neo4j database cleared successfully.")
+    except Exception as e:
+        logger.error(f"An error occurred during the database clearing process: {e}", exc_info=True)
+        raise click.ClickException("Database clearing failed. See logs for details.")
 
 @main.command()
-@click.option('--batch-size', default=None, help=f'Batch size for LOAD CSV transactions. Default: {settings.LOAD_CSV_BATCH_SIZE}')
-def load_csv(batch_size):
+def load_csv():
     """
-    (Not Implemented) Loads data into Neo4j using LOAD CSV.
+    Loads data into Neo4j using the online LOAD CSV method.
+    This performs a full reload: clears the DB, creates schema, and loads all CSVs.
     """
-    final_batch_size = batch_size if batch_size is not None else settings.LOAD_CSV_BATCH_SIZE
-    logger.warning("Command 'load-csv' is not yet implemented.")
-    click.echo(f"Command 'load-csv' is not yet implemented. Batch size would be {final_batch_size}")
+    logger.info("CLI 'load-csv' command initiated.")
+    try:
+        run_load_csv()
+        logger.info("CLI 'load-csv' command completed successfully.")
+        click.echo("LOAD CSV process completed successfully. See logs for details.")
+    except Exception as e:
+        logger.error(f"An error occurred during the LOAD CSV process: {e}", exc_info=True)
+        raise click.ClickException("LOAD CSV process failed. See logs for details.")
 
 @main.command()
 @click.option('--chunk-size', default=None, help=f'Chunk size for processing large files. Default: {settings.TRANSFORMATION_CHUNK_SIZE}')
@@ -59,10 +76,18 @@ def prepare_bulk(chunk_size):
 @main.command()
 def create_indexes():
     """
-    (Not Implemented) Creates constraints and indexes in Neo4j.
+    Creates constraints and indexes in Neo4j. Useful after a bulk import.
     """
-    logger.warning("Command 'create-indexes' is not yet implemented.")
-    click.echo("Command 'create-indexes' is not yet implemented.")
+    logger.info("CLI 'create-indexes' command initiated.")
+    try:
+        driver = get_driver()
+        create_constraints_and_indexes(driver)
+        driver.close()
+        logger.info("CLI 'create-indexes' command completed successfully.")
+        click.echo("Constraints and indexes created successfully.")
+    except Exception as e:
+        logger.error(f"An error occurred during index creation: {e}", exc_info=True)
+        raise click.ClickException("Index creation failed. See logs for details.")
 
 @main.command()
 def validate():
