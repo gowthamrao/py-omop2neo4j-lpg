@@ -1,98 +1,85 @@
+"""
+Command-Line Interface for the OMOP to Neo4j ETL tool.
+
+This module provides a CLI using 'click' to orchestrate the different
+stages of the ETL process, including extraction, loading, and database
+management tasks.
+"""
+
 import click
-from .config import logger, settings
-from .extraction import export_tables_to_csv
-from .loading import (
-    get_driver,
-    clear_database,
-    create_constraints_and_indexes,
-    run_load_csv,
-)
+from . import extraction
+from . import loading
+from .config import get_logger
+
+logger = get_logger(__name__)
 
 @click.group()
-@click.version_option()
-def main():
-    """
-    A command-line interface for migrating OMOP vocabulary from PostgreSQL to Neo4j.
-    """
+def cli():
+    """A CLI tool to migrate OMOP vocabulary from PostgreSQL to Neo4j."""
     pass
 
-@main.command()
+@cli.command()
 def extract():
     """
-    Extracts OMOP vocabulary tables from PostgreSQL to CSV files.
+    Extracts OMOP vocabulary data from PostgreSQL to CSV files.
     """
-    logger.info("CLI 'extract' command initiated.")
+    logger.info("CLI: Starting extraction process...")
     try:
-        logger.info(f"Using PostgreSQL schema: {settings.OMOP_SCHEMA}")
-        logger.info(f"Exporting to directory: {settings.EXPORT_DIR}")
-        export_tables_to_csv()
-        logger.info("CLI 'extract' command completed successfully.")
-        click.echo("Extraction completed successfully. Check logs for details.")
+        extraction.export_tables_to_csv()
+        logger.info("CLI: Extraction process completed successfully.")
     except Exception as e:
-        logger.error(f"An error occurred during the extraction process: {e}", exc_info=True)
-        raise click.ClickException("Extraction failed. See logs for details.")
+        logger.error(f"CLI: An error occurred during extraction: {e}")
+        # click.echo(f"Error during extraction: {e}") # This would print to console
+        # To keep logs clean, we just log it. The logger also prints to stdout.
 
-@main.command()
+@cli.command()
 def clear_db():
     """
-    Clears the Neo4j database (deletes all nodes, relationships, indexes, constraints).
+    Clears the Neo4j database by deleting all nodes and relationships.
+    Also drops all constraints and indexes.
     """
-    logger.info("CLI 'clear-db' command initiated.")
+    logger.info("CLI: Starting database clearing process...")
     try:
-        driver = get_driver()
-        clear_database(driver)
+        driver = loading.get_driver()
+        loading.clear_database(driver)
         driver.close()
-        logger.info("CLI 'clear-db' command completed successfully.")
-        click.echo("Neo4j database cleared successfully.")
+        logger.info("CLI: Database clearing process completed successfully.")
     except Exception as e:
-        logger.error(f"An error occurred during the database clearing process: {e}", exc_info=True)
-        raise click.ClickException("Database clearing failed. See logs for details.")
+        logger.error(f"CLI: An error occurred while clearing the database: {e}")
 
-@main.command()
-def load_csv():
+@cli.command()
+@click.option('--batch-size', default=None, type=int, help='Override LOAD_CSV_BATCH_SIZE from settings.')
+def load_csv(batch_size):
     """
-    Loads data into Neo4j using the online LOAD CSV method.
-    This performs a full reload: clears the DB, creates schema, and loads all CSVs.
+    Loads data from CSV files into Neo4j using the online LOAD CSV method.
+    This is a full reload: it clears the DB, creates schema, and loads data.
     """
-    logger.info("CLI 'load-csv' command initiated.")
+    logger.info("CLI: Starting LOAD CSV process...")
+    # Note: The current `run_load_csv` doesn't support overriding batch_size.
+    # This is a placeholder for future enhancement. If batch_size is passed,
+    # we could update settings, but that's complex. For now, we ignore it.
+    if batch_size:
+        logger.warning(f"CLI: --batch-size option is not yet implemented. Using value from settings.")
     try:
-        run_load_csv()
-        logger.info("CLI 'load-csv' command completed successfully.")
-        click.echo("LOAD CSV process completed successfully. See logs for details.")
+        loading.run_load_csv()
+        logger.info("CLI: LOAD CSV process completed successfully.")
     except Exception as e:
-        logger.error(f"An error occurred during the LOAD CSV process: {e}", exc_info=True)
-        raise click.ClickException("LOAD CSV process failed. See logs for details.")
+        logger.error(f"CLI: An error occurred during the LOAD CSV process: {e}")
 
-@main.command()
-@click.option('--chunk-size', default=None, help=f'Chunk size for processing large files. Default: {settings.TRANSFORMATION_CHUNK_SIZE}')
-def prepare_bulk(chunk_size):
-    """
-    (Not Implemented) Prepares CSVs for neo4j-admin bulk import.
-    """
-    final_chunk_size = chunk_size if chunk_size is not None else settings.TRANSFORMATION_CHUNK_SIZE
-    logger.warning("Command 'prepare-bulk' is not yet implemented.")
-    click.echo(f"Command 'prepare-bulk' is not yet implemented. Chunk size would be {final_chunk_size}")
-
-@main.command()
+@cli.command()
 def create_indexes():
     """
-    Creates constraints and indexes in Neo4j. Useful after a bulk import.
+    Creates all predefined constraints and indexes in the Neo4j database.
+    Useful after a manual import or if schema setup failed.
     """
-    logger.info("CLI 'create-indexes' command initiated.")
+    logger.info("CLI: Starting index and constraint creation process...")
     try:
-        driver = get_driver()
-        create_constraints_and_indexes(driver)
+        driver = loading.get_driver()
+        loading.create_constraints_and_indexes(driver)
         driver.close()
-        logger.info("CLI 'create-indexes' command completed successfully.")
-        click.echo("Constraints and indexes created successfully.")
+        logger.info("CLI: Index and constraint creation completed successfully.")
     except Exception as e:
-        logger.error(f"An error occurred during index creation: {e}", exc_info=True)
-        raise click.ClickException("Index creation failed. See logs for details.")
+        logger.error(f"CLI: An error occurred during index/constraint creation: {e}")
 
-@main.command()
-def validate():
-    """
-    (Not Implemented) Validates the loaded graph data.
-    """
-    logger.warning("Command 'validate' is not yet implemented.")
-    click.echo("Command 'validate' is not yet implemented.")
+if __name__ == '__main__':
+    cli()

@@ -12,15 +12,15 @@ class Settings(BaseSettings):
     # PostgreSQL Connection Settings
     POSTGRES_HOST: str = "localhost"
     POSTGRES_PORT: int = 5432
-    POSTGRES_USER: str
-    POSTGRES_PASSWORD: str
-    POSTGRES_DB: str
+    POSTGRES_USER: str = "postgres"
+    POSTGRES_PASSWORD: str  # No default value for secrets
+    POSTGRES_DB: str = "ohdsi"
     OMOP_SCHEMA: str = "omop_cdm"
 
     # Neo4j Connection Settings
     NEO4J_URI: str = "bolt://localhost:7687"
     NEO4J_USER: str = "neo4j"
-    NEO4J_PASSWORD: str
+    NEO4J_PASSWORD: str  # No default value for secrets
 
     # ETL Configuration
     EXPORT_DIR: str = "export"
@@ -37,20 +37,30 @@ settings = Settings()
 os.makedirs(settings.EXPORT_DIR, exist_ok=True)
 log_file_path = os.path.join(settings.EXPORT_DIR, settings.LOG_FILE)
 
-# Get a logger for the application
-logger = logging.getLogger("omop2neo4j")
-logger.setLevel(logging.INFO)
+def get_logger(name: str) -> logging.Logger:
+    """
+    Configures and returns a logger instance.
+    """
+    logger = logging.getLogger(name)
+    logger.setLevel(logging.INFO)
 
-# Create handlers
-stream_handler = logging.StreamHandler(sys.stdout)
-file_handler = logging.FileHandler(log_file_path)
+    # Prevent adding handlers multiple times
+    if not logger.handlers:
+        # Create handlers
+        stream_handler = logging.StreamHandler(sys.stdout)
+        file_handler = logging.FileHandler(log_file_path)
 
-# Create formatters and add it to handlers
-formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-stream_handler.setFormatter(formatter)
-file_handler.setFormatter(formatter)
+        # Create formatters and add it to handlers
+        formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        stream_handler.setFormatter(formatter)
+        file_handler.setFormatter(formatter)
 
-# Add handlers to the logger
-if not logger.handlers:
-    logger.addHandler(stream_handler)
-    logger.addHandler(file_handler)
+        # Add handlers to the logger
+        logger.addHandler(stream_handler)
+        logger.addHandler(file_handler)
+
+    return logger
+
+# A default logger for general use
+logger = get_logger("omop2neo4j")
+logger.info("Configuration loaded and logger initialized.")
