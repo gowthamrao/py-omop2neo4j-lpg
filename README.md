@@ -2,114 +2,65 @@
 
 A robust, high-performance Python package to orchestrate the migration of OMOP vocabulary tables from PostgreSQL to a mature Labeled Property Graph (LPG) in Neo4j.
 
-This package is designed with performance and scalability in mind, prioritizing native database tools (`COPY` and `LOAD CSV`) for all significant data movement.
+## Overview
 
-## Features (Implemented)
-
-*   **High-Performance Extraction**: Uses PostgreSQL's `COPY` command to efficiently dump vocabulary tables to CSV files.
-*   **Optimized Online Loading**: Implements the `LOAD CSV` method for loading data into a live Neo4j instance, using batched transactions and APOC for performance.
-*   **Robust Graph Modeling**: Creates a mature graph structure with dynamic labels and relationship types, proper indexing, and handling of concept hierarchies.
-*   **Idempotent Loading**: The loading process is fully idempotent; it completely clears the database before loading to ensure a clean state.
-*   **CLI Interface**: A user-friendly Command-Line Interface powered by `click` to orchestrate the entire workflow.
-*   **Configuration Driven**: All settings are managed via a `.env` file for easy configuration.
+This package provides a suite of command-line tools to manage the ETL process for moving OMOP vocabulary data into a Neo4j graph database. It is designed for performance and scalability, prioritizing the use of native database tools (`COPY` and `LOAD CSV`) wherever possible.
 
 ## Prerequisites
 
-1.  **Python**: Python 3.8 or higher.
-2.  **PostgreSQL**: A running PostgreSQL instance with the OMOP CDM vocabulary tables.
-3.  **Neo4j**: A running Neo4j 4.x or 5.x instance.
-4.  **Docker (Recommended)**: The recommended way to run Neo4j is via Docker, as it simplifies plugin management and file access for `LOAD CSV`.
+- Python 3.8+
+- Access to a PostgreSQL database with the OMOP CDM vocabulary tables.
+- A running Neo4j instance.
 
-## Installation
+## Setup and Configuration
 
-1.  Clone the repository:
-    ```bash
-    git clone <repository_url>
-    cd py-omop2neo4j-lpg
-    ```
-
-2.  Install the package and its dependencies. It is highly recommended to do this in a virtual environment.
+1.  **Install Dependencies:**
+    It is recommended to install the package in a virtual environment.
     ```bash
     pip install .
     ```
-    This command reads the `pyproject.toml` file and installs the package in editable mode.
 
-## Configuration
-
-1.  **Create a `.env` file**:
-    Copy the example configuration file to a new `.env` file in the project root.
+2.  **Configure Environment:**
+    The application is configured using environment variables. Create a `.env` file in the root of the project directory by copying the example file:
     ```bash
     cp .env.example .env
     ```
+    Now, edit the `.env` file with your specific database credentials and settings.
 
-2.  **Edit `.env`**:
-    Open the `.env` file and fill in the connection details for your PostgreSQL and Neo4j databases. Pay special attention to the `OMOP_SCHEMA` variable.
+    ```dotenv
+    # .env file
+    # PostgreSQL Connection Settings
+    POSTGRES_HOST=localhost
+    POSTGRES_PORT=5432
+    POSTGRES_USER=your_postgres_user
+    POSTGRES_PASSWORD=your_postgres_password
+    POSTGRES_DB=your_database
+    OMOP_SCHEMA=public # Your OMOP CDM schema
 
-### Neo4j and Docker Setup (Crucial for `load-csv`)
+    # Neo4j Connection Settings
+    NEO4J_URI=bolt://localhost:7687
+    NEO4J_USER=neo4j
+    NEO4J_PASSWORD=your_neo4j_password
 
-The `load-csv` command uses Neo4j's `LOAD CSV` Cypher command, which requires the Neo4j server to have direct access to the CSV files. The easiest way to achieve this is by using the official Neo4j Docker image and mounting a local directory to the container's `/import` directory.
-
-The package exports CSVs to the directory specified by `EXPORT_DIR` in your `.env` (defaulting to `./export`). You must mount this *same directory* to your Neo4j container.
-
-**Example `docker-compose.yml`:**
-
-```yaml
-version: '3.8'
-services:
-  neo4j:
-    image: neo4j:5.11
-    container_name: neo4j-omop-vocab
-    environment:
-      - NEO4J_AUTH=${NEO4J_USER}/${NEO4J_PASSWORD}
-      # Required for LOAD CSV and APOC
-      - NEO4J_apoc_export_file_enabled=true
-      - NEO4J_apoc_import_file_enabled=true
-      - NEO4J_apoc_import_file_use__neo4j__config=true
-      - NEO4JLABS_PLUGINS=["apoc"]
-      # Allow file access from the /import directory
-      - NEO4J_server_file_bolt_import_enabled=true
-    ports:
-      - "7474:7474"
-      - "7687:7687"
-    volumes:
-      # Mounts the local ./export directory to /import inside the container
-      - ./export:/import
-      - ./neo4j/data:/data
-```
+    # ETL Configuration
+    EXPORT_DIR=export
+    ```
 
 ## Usage
 
-The package provides a command-line interface, `omop2neo4j`.
+The package provides a single command-line interface, `py-omop2neo4j-lpg`.
 
-### Step 1: Extract Data from PostgreSQL
+### Extract Data from PostgreSQL
 
-Run the `extract` command to connect to PostgreSQL and export the vocabulary tables into CSV files in your `EXPORT_DIR`.
-
-```bash
-omop2neo4j extract
-```
-
-### Step 2: Load Data into Neo4j
-
-Run the `load-csv` command to load the data from the generated CSV files into Neo4j.
-
-**Warning**: This command will first completely wipe all data in your Neo4j database.
+To extract the necessary vocabulary tables from PostgreSQL into CSV files, run the `extract` command. The files will be saved in the directory specified by `EXPORT_DIR` (default: `export`).
 
 ```bash
-omop2neo4j load-csv
+py-omop2neo4j-lpg extract
 ```
-You will be asked to confirm before the database is cleared.
 
-### Other Commands
-
-*   **Clear the Database**: If you only want to clear the Neo4j database without loading new data.
-    ```bash
-    omop2neo4j clear-db
-    ```
-*   **Create Schema**: If you only want to create the constraints and indexes without loading data.
-    ```bash
-    omop2neo4j create-indexes
-    ```
-
----
-*This project was bootstrapped by an AI software engineer.*
+This will create the following files in your export directory:
+- `concepts_optimized.csv`
+- `domain.csv`
+- `vocabulary.csv`
+- `concept_relationship.csv`
+- `concept_ancestor.csv`
