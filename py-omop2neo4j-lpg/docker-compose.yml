@@ -1,0 +1,33 @@
+version: '3.8'
+
+services:
+  neo4j:
+    image: neo4j:5.18.0 # Using a specific version is good practice
+    container_name: neo4j-omop-vocab
+    environment:
+      # Default credentials. Change these for production.
+      - NEO4J_AUTH=neo4j/StrongPass123
+      # Enable APOC and file imports
+      - NEO4J_apoc_export_file_enabled=true
+      - NEO4J_apoc_import_file_enabled=true
+      - NEO4J_apoc_import_file_use__neo4j__config=true
+      - NEO4JLABS_PLUGINS=["apoc"]
+      # Allow read/write from the /import directory. This is crucial for LOAD CSV.
+      - NEO4J_server_filesystem_import_directory=/import
+      - NEO4J_server_filesystem_security_enabled=false # Use with caution
+
+      # --- PERFORMANCE TUNING (ADJUST BASED ON YOUR HARDWARE) ---
+      # Advise users to set heap to be large enough for transaction state,
+      # and pagecache to be large enough to hold the graph.
+      - NEO4J_server_memory_heap_initial_size=4G
+      - NEO4J_server_memory_heap_max_size=4G
+      - NEO4J_server_memory_pagecache_size=8G
+    ports:
+      - "7474:7474" # HTTP
+      - "7687:7687" # Bolt
+    volumes:
+      # Persists Neo4j data between runs
+      - ./neo4j/data:/data
+      # Maps a local directory to Neo4j's import directory.
+      # Place the CSV files from the 'extract' command here.
+      - ./export:/import
