@@ -1,17 +1,12 @@
 import click
+from .config import logger, settings
 from .extraction import export_tables_to_csv
-from .loading import run_load_csv, clear_database, create_constraints_and_indexes, get_driver
-from .config import get_logger
 
-logger = get_logger(__name__)
-
-@click.group(context_settings=dict(help_option_names=['-h', '--help']))
+@click.group()
+@click.version_option()
 def main():
     """
-    A command-line interface for migrating OMOP vocabulary data from
-    PostgreSQL to a Neo4j Labeled Property Graph.
-
-    Configuration is managed via a .env file in the project root.
+    A command-line interface for migrating OMOP vocabulary from PostgreSQL to Neo4j.
     """
     pass
 
@@ -19,94 +14,60 @@ def main():
 def extract():
     """
     Extracts OMOP vocabulary tables from PostgreSQL to CSV files.
-    The CSV files will be saved in the directory specified by EXPORT_DIR
-    in your .env file (defaults to './export').
     """
-    logger.info("CLI: Initiating 'extract' command.")
+    logger.info("CLI 'extract' command initiated.")
     try:
+        logger.info(f"Using PostgreSQL schema: {settings.OMOP_SCHEMA}")
+        logger.info(f"Exporting to directory: {settings.EXPORT_DIR}")
+
         export_tables_to_csv()
-        logger.info("CLI: 'extract' command completed successfully.")
+
+        logger.info("CLI 'extract' command completed successfully.")
+        click.echo("Extraction completed successfully. Check logs for details.")
     except Exception as e:
-        logger.error(f"CLI: An error occurred during the extraction process: {e}", exc_info=True)
-        click.echo(f"Extraction failed. Check the log file for details.")
-
-
-@main.command()
-def load_csv():
-    """
-    Runs the full online loading process into Neo4j using LOAD CSV.
-
-    This is a destructive operation that will first WIPE the entire Neo4j
-    database. It then creates the schema (constraints/indexes) and loads
-    all data from the CSV files in the export directory.
-    """
-    logger.info("CLI: Initiating 'load-csv' command.")
-    if not click.confirm(
-        "⚠️ This is a destructive operation that will WIPE the Neo4j database. "
-        "Are you sure you want to continue?"
-    ):
-        click.echo("Command aborted by user.")
-        return
-
-    try:
-        run_load_csv()
-        logger.info("CLI: 'load-csv' command completed successfully.")
-        click.echo("Successfully loaded all data into Neo4j.")
-    except Exception as e:
-        logger.error(f"CLI: An error occurred during the loading process: {e}", exc_info=True)
-        click.echo(f"Loading failed. Check the log file for details.")
-
+        logger.error(f"An error occurred during the extraction process: {e}", exc_info=True)
+        raise click.ClickException("Extraction failed. See logs for details.")
 
 @main.command()
 def clear_db():
     """
-    Clears the Neo4j database.
-
-    This command drops all constraints and indexes, then deletes all nodes
-    and relationships.
+    (Not Implemented) Clears the Neo4j database.
     """
-    logger.info("CLI: Initiating 'clear-db' command.")
-    if not click.confirm(
-        "⚠️ This will WIPE the Neo4j database completely. "
-        "Are you sure you want to continue?"
-    ):
-        click.echo("Command aborted by user.")
-        return
+    logger.warning("Command 'clear-db' is not yet implemented.")
+    click.echo("Command 'clear-db' is not yet implemented.")
 
-    driver = None
-    try:
-        driver = get_driver()
-        clear_database(driver)
-        logger.info("CLI: 'clear-db' command completed successfully.")
-        click.echo("Neo4j database has been cleared.")
-    except Exception as e:
-        logger.error(f"CLI: An error occurred while clearing the database: {e}", exc_info=True)
-        click.echo(f"Clearing the database failed. Check the log file for details.")
-    finally:
-        if driver:
-            driver.close()
+@main.command()
+@click.option('--batch-size', default=None, help=f'Batch size for LOAD CSV transactions. Default: {settings.LOAD_CSV_BATCH_SIZE}')
+def load_csv(batch_size):
+    """
+    (Not Implemented) Loads data into Neo4j using LOAD CSV.
+    """
+    final_batch_size = batch_size if batch_size is not None else settings.LOAD_CSV_BATCH_SIZE
+    logger.warning("Command 'load-csv' is not yet implemented.")
+    click.echo(f"Command 'load-csv' is not yet implemented. Batch size would be {final_batch_size}")
 
+@main.command()
+@click.option('--chunk-size', default=None, help=f'Chunk size for processing large files. Default: {settings.TRANSFORMATION_CHUNK_SIZE}')
+def prepare_bulk(chunk_size):
+    """
+    (Not Implemented) Prepares CSVs for neo4j-admin bulk import.
+    """
+    final_chunk_size = chunk_size if chunk_size is not None else settings.TRANSFORMATION_CHUNK_SIZE
+    logger.warning("Command 'prepare-bulk' is not yet implemented.")
+    click.echo(f"Command 'prepare-bulk' is not yet implemented. Chunk size would be {final_chunk_size}")
 
 @main.command()
 def create_indexes():
     """
-    Creates all constraints and indexes for the OMOP graph model.
-    This operation is idempotent and can be run safely multiple times.
-    It is also run automatically as part of the `load-csv` command.
+    (Not Implemented) Creates constraints and indexes in Neo4j.
     """
-    logger.info("CLI: Initiating 'create-indexes' command.")
-    driver = None
-    try:
-        driver = get_driver()
-        create_constraints_and_indexes(driver)
-        logger.info("CLI: 'create-indexes' command completed successfully.")
-        click.echo("Successfully created constraints and indexes.")
-    except Exception as e:
-        logger.error(f"CLI: An error occurred while creating indexes: {e}", exc_info=True)
-        click.echo(f"Index creation failed. Check the log file for details.")
-    finally:
-        if driver:
-            driver.close()
+    logger.warning("Command 'create-indexes' is not yet implemented.")
+    click.echo("Command 'create-indexes' is not yet implemented.")
 
-if __name__ == '__main__':
-    main()
+@main.command()
+def validate():
+    """
+    (Not Implemented) Validates the loaded graph data.
+    """
+    logger.warning("Command 'validate' is not yet implemented.")
+    click.echo("Command 'validate' is not yet implemented.")
