@@ -1,11 +1,13 @@
 Metadata-Version: 2.4
 Name: py-omop2neo4j-lpg
 Version: 0.1.0
-Summary: A Python package to migrate OMOP vocabulary tables from PostgreSQL to Neo4j.
+Summary: A Python package to migrate OMOP vocabulary from PostgreSQL to Neo4j LPG.
 Author-email: Gowtham Rao <rao@ohdsi.org>
 Classifier: Programming Language :: Python :: 3
 Classifier: License :: OSI Approved :: MIT License
 Classifier: Operating System :: OS Independent
+Classifier: Topic :: Scientific/Engineering :: Medical Science Apps.
+Classifier: Topic :: Database
 Requires-Python: >=3.8
 Description-Content-Type: text/markdown
 License-File: LICENSE
@@ -16,120 +18,119 @@ Requires-Dist: numpy
 Requires-Dist: click
 Requires-Dist: pydantic-settings
 Requires-Dist: python-dotenv
+Provides-Extra: test
+Requires-Dist: pytest; extra == "test"
 Dynamic: license-file
 
 # py-omop2neo4j-lpg
 
 A robust, high-performance Python package to orchestrate the migration of OMOP vocabulary tables from PostgreSQL to a mature Labeled Property Graph (LPG) in Neo4j.
 
-This package is designed with performance and scalability in mind, prioritizing native database tools (`COPY` and `LOAD CSV`) for all significant data movement.
+## Overview
 
-## Features (Implemented)
+This package provides a suite of command-line tools to manage the ETL process for moving OMOP vocabulary data into a Neo4j graph database. It is designed for performance and scalability, prioritizing the use of native database tools (`COPY` and `LOAD CSV`) and providing two main loading strategies:
 
-*   **High-Performance Extraction**: Uses PostgreSQL's `COPY` command to efficiently dump vocabulary tables to CSV files.
-*   **Optimized Online Loading**: Implements the `LOAD CSV` method for loading data into a live Neo4j instance, using batched transactions and APOC for performance.
-*   **Robust Graph Modeling**: Creates a mature graph structure with dynamic labels and relationship types, proper indexing, and handling of concept hierarchies.
-*   **Idempotent Loading**: The loading process is fully idempotent; it completely clears the database before loading to ensure a clean state.
-*   **CLI Interface**: A user-friendly Command-Line Interface powered by `click` to orchestrate the entire workflow.
-*   **Configuration Driven**: All settings are managed via a `.env` file for easy configuration.
+1.  **Online Loading (`load-csv`):** An easy-to-use method that streams data directly into a running Neo4j instance. Ideal for most standard vocabulary sizes.
+2.  **Offline Loading (`prepare-bulk`):** A high-performance method for extremely large datasets that prepares data for Neo4j's offline `neo4j-admin` import tool. (This command is a placeholder and not yet fully implemented).
+
+This document focuses on the **Online Loading** method.
 
 ## Prerequisites
 
-1.  **Python**: Python 3.8 or higher.
-2.  **PostgreSQL**: A running PostgreSQL instance with the OMOP CDM vocabulary tables.
-3.  **Neo4j**: A running Neo4j 4.x or 5.x instance.
-4.  **Docker (Recommended)**: The recommended way to run Neo4j is via Docker, as it simplifies plugin management and file access for `LOAD CSV`.
+*   Python 3.8+
+*   Docker and Docker Compose (recommended for running Neo4j)
+*   Access to a PostgreSQL database with the OMOP CDM vocabulary tables.
 
-## Installation
+## 1. Neo4j Setup (Recommended)
 
-1.  Clone the repository:
-    ```bash
-    git clone <repository_url>
-    cd py-omop2neo4j-lpg
-    ```
+The `load-csv` command requires a running Neo4j instance with the **APOC** plugin installed. The easiest way to set this up is with Docker. The command also needs access to the generated CSV files, which requires mounting a local directory to the Neo4j container's `/import` directory.
 
-2.  Install the package and its dependencies. It is highly recommended to do this in a virtual environment.
-    ```bash
-    pip install .
-    ```
-    This command reads the `pyproject.toml` file and installs the package in editable mode.
-
-## Configuration
-
-1.  **Create a `.env` file**:
-    Copy the example configuration file to a new `.env` file in the project root.
-    ```bash
-    cp .env.example .env
-    ```
-
-2.  **Edit `.env`**:
-    Open the `.env` file and fill in the connection details for your PostgreSQL and Neo4j databases. Pay special attention to the `OMOP_SCHEMA` variable.
-
-### Neo4j and Docker Setup (Crucial for `load-csv`)
-
-The `load-csv` command uses Neo4j's `LOAD CSV` Cypher command, which requires the Neo4j server to have direct access to the CSV files. The easiest way to achieve this is by using the official Neo4j Docker image and mounting a local directory to the container's `/import` directory.
-
-The package exports CSVs to the directory specified by `EXPORT_DIR` in your `.env` (defaulting to `./export`). You must mount this *same directory* to your Neo4j container.
-
-**Example `docker-compose.yml`:**
+Here is a reference `docker-compose.yml` file to configure the service correctly:
 
 ```yaml
+# docker-compose.yml
 version: '3.8'
 services:
   neo4j:
-    image: neo4j:5.11
+    image: neo4j:latest
     container_name: neo4j-omop-vocab
     environment:
-      - NEO4J_AUTH=${NEO4J_USER}/${NEO4J_PASSWORD}
-      # Required for LOAD CSV and APOC
-      - NEO4J_apoc_export_file_enabled=true
+      - NEO4J_AUTH=neo4j/your_strong_password
       - NEO4J_apoc_import_file_enabled=true
       - NEO4J_apoc_import_file_use__neo4j__config=true
       - NEO4JLABS_PLUGINS=["apoc"]
-      # Allow file access from the /import directory
-      - NEO4J_server_file_bolt_import_enabled=true
+      # Example Memory Tuning (Adjust based on your hardware)
+      - NEO4J_server_memory_heap_initial_size=4G
+      - NEO4J_server_memory_heap_max_size=4G
+      - NEO4J_server_memory_pagecache_size=8G
     ports:
       - "7474:7474"
       - "7687:7687"
     volumes:
-      # Mounts the local ./export directory to /import inside the container
-      - ./export:/import
       - ./neo4j/data:/data
+      # Mounts the local 'export' directory to the container's '/import' directory
+      - ./export:/import
 ```
 
-## Usage
+To start the service, save the file as `docker-compose.yml` and run:
+```bash
+docker-compose up -d
+```
 
-The package provides a command-line interface, `omop2neo4j`.
+## 2. Package Installation and Configuration
+
+1.  **Install Package:**
+    It is recommended to install the package in a Python virtual environment.
+    ```bash
+    # Clone the repository (if you haven't already)
+    # git clone <repo_url>
+    # cd py-omop2neo4j-lpg
+
+    # Install
+    pip install .
+    ```
+
+2.  **Configure Environment:**
+    The application is configured using environment variables. Create a `.env` file in the root of the project directory by copying the example file:
+    ```bash
+    cp .env.example .env
+    ```
+    Now, edit the `.env` file with your specific database credentials. **Make sure the `NEO4J_PASSWORD` matches the one you set in `docker-compose.yml`**.
+
+## 3. Usage (Online `load-csv` Workflow)
+
+The package provides a single command-line interface, `py-omop2neo4j-lpg`.
 
 ### Step 1: Extract Data from PostgreSQL
 
-Run the `extract` command to connect to PostgreSQL and export the vocabulary tables into CSV files in your `EXPORT_DIR`.
+Run the `extract` command to export the necessary vocabulary tables from PostgreSQL into CSV files. The files will be saved in the directory specified by `EXPORT_DIR` (default: `./export`), which is the same directory mounted into the Neo4j container.
 
 ```bash
-omop2neo4j extract
+py-omop2neo4j-lpg extract
 ```
 
 ### Step 2: Load Data into Neo4j
 
-Run the `load-csv` command to load the data from the generated CSV files into Neo4j.
-
-**Warning**: This command will first completely wipe all data in your Neo4j database.
+Run the `load-csv` command to perform a full reload of the Neo4j database. This single command will automatically:
+1.  Clear the entire Neo4j database.
+2.  Create the necessary constraints and indexes.
+3.  Load all the data from the CSV files.
 
 ```bash
-omop2neo4j load-csv
+py-omop2neo4j-lpg load-csv
 ```
-You will be asked to confirm before the database is cleared.
 
-### Other Commands
+The process can take several minutes depending on the size of the vocabulary and your hardware. Check the logs for detailed progress.
 
-*   **Clear the Database**: If you only want to clear the Neo4j database without loading new data.
+### Utility Commands
+
+The following commands are also available:
+
+*   **`clear-db`**: Use this command to only wipe the Neo4j database without loading new data.
     ```bash
-    omop2neo4j clear-db
+    py-omop2neo4j-lpg clear-db
     ```
-*   **Create Schema**: If you only want to create the constraints and indexes without loading data.
+*   **`create-indexes`**: Use this to apply the schema (constraints and indexes) to an existing database. This is mainly useful after a manual or bulk import.
     ```bash
-    omop2neo4j create-indexes
+    py-omop2neo4j-lpg create-indexes
     ```
-
----
-*This project was bootstrapped by an AI software engineer.*
