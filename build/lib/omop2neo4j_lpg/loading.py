@@ -1,0 +1,182 @@
+from __future__ import annotations
+from neo4j import GraphDatabase, Driver
+from .config import settings, get_logger
+
+logger = get_logger(__name__)
+
+# --- Neo4j Driver Setup ---
+
+def get_driver() -> Driver:
+    """Establishes connection with the Neo4j database and returns a driver object."""
+    return GraphDatabase.driver(
+        settings.NEO4J_URI,
+        auth=(settings.NEO4J_USER, settings.NEO4J_PASSWORD)
+    )
+
+# --- Helper for running queries ---
+
+def _execute_queries(driver: Driver, queries: list[str]):
+    """Helper function to execute a list of Cypher queries."""
+    with driver.session() as session:
+        for query in queries:
+            try:
+                logger.info(f"Executing: {query[:120].strip()}...")
+                session.run(query)
+            except Exception as e:
+                logger.error(f"Failed to execute query: {query[:120].strip()}")
+                logger.error(e)
+                raise
+
+# --- Database Cleanup ---
+
+def clear_database(driver: Driver):
+    """Drops all constraints and indexes, then deletes all nodes and relationships."""
+    logger.info("Starting database clearing process.")
+    with driver.session() as session:
+        constraints = session.run("SHOW CONSTRAINTS YIELD name").data()
+        indexes = session.run("SHOW INDEXES YIELD name").data()
+
+    drop_constraints = [f"DROP CONSTRAINT {c['name']}" for c in constraints if c['name'] is not None]
+    drop_indexes = [f"DROP INDEX {i['name']}" for i in indexes if i['name'] is not None]
+
+    if drop_constraints:
+        logger.info("Dropping existing constraints...")
+        _execute_queries(driver, drop_constraints)
+    if drop_indexes:
+        logger.info("Dropping existing indexes...")
+        _execute_queries(driver, drop_indexes)
+
+    logger.info("Deleting all nodes and relationships...")
+    _execute_queries(driver, ["MATCH (n) DETACH DELETE n"])
+    logger.info("Database cleared successfully.")
+
+# --- Schema Setup ---
+
+def create_constraints_and_indexes(driver: Driver):
+    """Creates constraints and indexes as defined in the FRD."""
+    logger.info("Creating constraints and indexes.")
+    queries = [
+        "CREATE CONSTRAINT constraint_concept_id IF NOT EXISTS FOR (c:Concept) REQUIRE c.concept_id IS UNIQUE;",
+        "CREATE CONSTRAINT constraint_domain_id IF NOT EXISTS FOR (d:Domain) REQUIRE d.domain_id IS UNIQUE;",
+        "CREATE CONSTRAINT constraint_vocabulary_id IF NOT EXISTS FOR (v:Vocabulary) REQUIRE v.vocabulary_id IS UNIQUE;",
+        "CREATE INDEX index_concept_code IF NOT EXISTS FOR (c:Concept) ON (c.concept_code);",
+        "CREATE INDEX index_standard_label IF NOT EXISTS FOR (c:Standard) ON (c.concept_id);",
+    ]
+    _execute_queries(driver, queries)
+    logger.info("Constraints and indexes created successfully.")
+
+# --- Data Loading Orchestrator ---
+
+def run_load_csv():
+    """
+    Main orchestrator for the LOAD CSV method.
+    Connects to Neo4j, clears the DB, sets up schema, and loads all data.
+    """
+    driver = get_driver()
+    try:
+        logger.info("Successfully connected to Neo4j.")
+
+        clear_database(driver)
+        create_constraints_and_indexes(driver)
+
+        logger.info("Starting data loading process...")
+        batch_size = settings.LOAD_CSV_BATCH_SIZE
+
+        queries = get_loading_queries(batch_size)
+        _execute_queries(driver, queries)
+
+        logger.info("All data loading tasks completed successfully.")
+
+    except Exception as e:
+        logger.error(f"An error occurred during the Neo4j loading process: {e}")
+        raise
+    finally:
+        driver.close()
+        logger.info("Neo4j connection closed.")
+
+
+def get_loading_queries(batch_size: int) -> list[str]:
+    """Returns a list of all LOAD CSV queries."""
+
+    # NOTE: The file paths ('file:///...') are relative to the Neo4j container's `/import` directory.
+    # The user is responsible for mounting the local `export` directory to `/import` in Docker.
+
+    load_domains = """
+    LOAD CSV WITH HEADERS FROM 'file:///domain.csv' AS row
+    CREATE (d:Domain {
+        domain_id: row.domain_id,
+        name: row.domain_name,
+        concept_id: toInteger(row.domain_concept_id)
+    });
+    """
+
+    load_vocabularies = """
+    LOAD CSV WITH HEADERS FROM 'file:///vocabulary.csv' AS row
+    CREATE (v:Vocabulary {
+        vocabulary_id: row.vocabulary_id,
+        name: row.vocabulary_name,
+        concept_id: toInteger(row.vocabulary_concept_id),
+        vocabulary_reference: row.vocabulary_reference,
+        vocabulary_version: row.vocabulary_version
+    });
+    """
+
+    load_concepts = f"""
+    CALL {{
+        LOAD CSV WITH HEADERS FROM 'file:///concepts_optimized.csv' AS row
+        CREATE (c:Concept {{
+            concept_id: toInteger(row.concept_id),
+            name: row.concept_name,
+            domain_id: row.domain_id,
+            vocabulary_id: row.vocabulary_id,
+            concept_class_id: row.concept_class_id,
+            standard_concept: row.standard_concept,
+            code: row.concept_code,
+            valid_start_date: date(row.valid_start_date),
+            valid_end_date: date(row.valid_end_date),
+            invalid_reason: row.invalid_reason,
+            synonyms: CASE WHEN row.synonyms IS NOT NULL THEN split(row.synonyms, '|') ELSE [] END
+        }})
+        WITH c, row
+        CALL apoc.create.addLabels(c, [apoc.text.upperCamelCase(row.domain_id)]) YIELD node
+        WITH c, row
+        CALL apoc.do.when(
+            row.standard_concept = 'S',
+            'SET c:Standard', '', {{c:c}}
+        ) YIELD value
+        WITH c, row
+        MATCH (d:Domain {{domain_id: row.domain_id}})
+        CREATE (c)-[:IN_DOMAIN]->(d)
+        WITH c, row
+        MATCH (v:Vocabulary {{vocabulary_id: row.vocabulary_id}})
+        CREATE (c)-[:FROM_VOCABULARY]->(v)
+    }} IN TRANSACTIONS OF {batch_size} ROWS;
+    """
+
+    load_relationships = f"""
+    CALL {{
+        LOAD CSV WITH HEADERS FROM 'file:///concept_relationship.csv' AS row
+        MATCH (c1:Concept {{concept_id: toInteger(row.concept_id_1)}})
+        MATCH (c2:Concept {{concept_id: toInteger(row.concept_id_2)}})
+        WITH c1, c2, row, toupper(apoc.text.replace(row.relationship_id, '[^A-Za-z0-9_]+', '_')) AS relType
+        CALL apoc.create.relationship(c1, relType, {{
+            valid_start: date(row.valid_start_date),
+            valid_end: date(row.valid_end_date),
+            invalid_reason: row.invalid_reason
+        }}, c2) YIELD rel
+        RETURN count(rel)
+    }} IN TRANSACTIONS OF {batch_size} ROWS;
+    """
+
+    load_ancestors = f"""
+    CALL {{
+        LOAD CSV WITH HEADERS FROM 'file:///concept_ancestor.csv' AS row
+        MATCH (d:Concept {{concept_id: toInteger(row.descendant_concept_id)}})
+        MATCH (a:Concept {{concept_id: toInteger(row.ancestor_concept_id)}})
+        CREATE (d)-[r:HAS_ANCESTOR]->(a)
+        SET r.min_levels = toInteger(row.min_levels_of_separation),
+            r.max_levels = toInteger(row.max_levels_of_separation)
+    }} IN TRANSACTIONS OF {batch_size} ROWS;
+    """
+
+    return [load_domains, load_vocabularies, load_concepts, load_relationships, load_ancestors]
