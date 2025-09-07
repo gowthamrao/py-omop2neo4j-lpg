@@ -5,6 +5,3 @@ numpy
 click
 pydantic-settings
 python-dotenv
-
-[test]
-pytest

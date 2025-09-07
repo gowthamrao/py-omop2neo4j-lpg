@@ -16,3 +16,4 @@ src/py_omop2neo4j_lpg.egg-info/entry_points.txt
 src/py_omop2neo4j_lpg.egg-info/requires.txt
 src/py_omop2neo4j_lpg.egg-info/top_level.txt
 tests/test_utils.py
+tests/test_validation.py

@@ -75,14 +75,14 @@ docker-compose up -d
 
 ## 3. Usage (Online `load-csv` Workflow)
 
-The package provides a single command-line interface, `py-omop2neo4j-lpg`.
+The package provides a single command-line interface, `omop2neo4j`.
 
 ### Step 1: Extract Data from PostgreSQL
 
 Run the `extract` command to export the necessary vocabulary tables from PostgreSQL into CSV files. The files will be saved in the directory specified by `EXPORT_DIR` (default: `./export`), which is the same directory mounted into the Neo4j container.
 
 ```bash
-py-omop2neo4j-lpg extract
+omop2neo4j extract
 ```
 
 ### Step 2: Load Data into Neo4j
@@ -93,10 +93,23 @@ Run the `load-csv` command to perform a full reload of the Neo4j database. This 
 3.  Load all the data from the CSV files.
 
 ```bash
-py-omop2neo4j-lpg load-csv
+omop2neo4j load-csv
 ```
 
 The process can take several minutes depending on the size of the vocabulary and your hardware. Check the logs for detailed progress.
+
+### Step 3: Validate the Loaded Data
+
+After loading, run the `validate` command to check the integrity of the graph. This command reports node and relationship counts and performs a structural check on a sample concept.
+
+```bash
+omop2neo4j validate
+```
+
+You can also check a specific concept using the `--concept-id` option:
+```bash
+omop2neo4j validate --concept-id 19011108
+```
 
 ### Utility Commands
 
@@ -104,9 +117,13 @@ The following commands are also available:
 
 *   **`clear-db`**: Use this command to only wipe the Neo4j database without loading new data.
     ```bash
-    py-omop2neo4j-lpg clear-db
+    omop2neo4j clear-db
     ```
 *   **`create-indexes`**: Use this to apply the schema (constraints and indexes) to an existing database. This is mainly useful after a manual or bulk import.
     ```bash
-    py-omop2neo4j-lpg create-indexes
+    omop2neo4j create-indexes
+    ```
+*   **`validate`**: Runs the post-load validation checks.
+    ```bash
+    omop2neo4j validate
     ```
