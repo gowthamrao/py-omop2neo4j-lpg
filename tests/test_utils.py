@@ -1,36 +1,40 @@
-import unittest
-import sys
-import os
-
-# Add the src directory to the Python path
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'src')))
-
+import pytest
 from omop2neo4j_lpg.utils import standardize_label, standardize_reltype
 
-class TestUtils(unittest.TestCase):
+# Test cases for standardize_label
+@pytest.mark.parametrize("input_str, expected_output", [
+    ("Hello World", "HelloWorld"),
+    ("Drug/Ingredient", "DrugIngredient"),
+    ("SpecAnatomicSite", "SpecAnatomicSite"),
+    ("Observation 2", "Observation2"),
+    ("  leading spaces", "LeadingSpaces"),
+    ("trailing spaces  ", "TrailingSpaces"),
+    ("", ""),
+    ("special-chars!@#$", "SpecialChars"),
+    ("a b c", "ABC"), # Test for single letter words
+    ("mixedCASE", "MixedCASE"), # Should only capitalize first letter
+])
+def test_standardize_label(input_str, expected_output):
+    assert standardize_label(input_str) == expected_output
 
-    def test_standardize_label(self):
-        self.assertEqual(standardize_label("Hello World"), "HelloWorld")
-        self.assertEqual(standardize_label("Drug/Ingredient"), "DrugIngredient")
-        self.assertEqual(standardize_label("SpecAnatomicSite"), "SpecAnatomicSite")
-        self.assertEqual(standardize_label("Observation 2"), "Observation2")
-        self.assertEqual(standardize_label("  leading spaces"), "LeadingSpaces")
-        self.assertEqual(standardize_label("trailing spaces  "), "TrailingSpaces")
-        self.assertEqual(standardize_label(""), "")
-        self.assertEqual(standardize_label(None), "")
-        self.assertEqual(standardize_label("special-chars!@#$"), "SpecialChars")
+def test_standardize_label_none():
+    assert standardize_label(None) == ""
 
-    def test_standardize_reltype(self):
-        self.assertEqual(standardize_reltype("maps to"), "MAPS_TO")
-        self.assertEqual(standardize_reltype("ATC - ATC"), "ATC_ATC")
-        self.assertEqual(standardize_reltype("Has ancestor"), "HAS_ANCESTOR")
-        self.assertEqual(standardize_reltype("RxNorm has ingredient"), "RXNORM_HAS_INGREDIENT")
-        self.assertEqual(standardize_reltype("trailing_sep_"), "TRAILING_SEP")
-        self.assertEqual(standardize_reltype("_leading_sep"), "LEADING_SEP")
-        self.assertEqual(standardize_reltype("double__underscore"), "DOUBLE_UNDERSCORE")
-        self.assertEqual(standardize_reltype(""), "")
-        self.assertEqual(standardize_reltype(None), "")
-        self.assertEqual(standardize_reltype("special-chars!@#$"), "SPECIAL_CHARS")
+# Test cases for standardize_reltype
+@pytest.mark.parametrize("input_str, expected_output", [
+    ("maps to", "MAPS_TO"),
+    ("ATC - ATC", "ATC_ATC"),
+    ("Has ancestor", "HAS_ANCESTOR"),
+    ("RxNorm has ingredient", "RXNORM_HAS_INGREDIENT"),
+    ("trailing_sep_", "TRAILING_SEP"),
+    ("_leading_sep", "LEADING_SEP"),
+    ("double__underscore", "DOUBLE_UNDERSCORE"),
+    ("", ""),
+    ("special-chars!@#$", "SPECIAL_CHARS"),
+    ("a b c", "A_B_C"),
+])
+def test_standardize_reltype(input_str, expected_output):
+    assert standardize_reltype(input_str) == expected_output
 
-if __name__ == '__main__':
-    unittest.main()
+def test_standardize_reltype_none():
+    assert standardize_reltype(None) == ""

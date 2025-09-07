@@ -1,10 +1,23 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "py-omop2neo4j-lpg"
 version = "0.1.0"
-description = "A Python package to migrate OMOP vocabulary from PostgreSQL to Neo4j."
-authors = [{ name = "Gowtham Rao", email = "rao@ohdsi.org" }]
+authors = [
+  { name="Gowtham Rao", email="rao@ohdsi.org" },
+]
+description = "A Python package to migrate OMOP vocabulary from PostgreSQL to Neo4j LPG."
 readme = "README.md"
 requires-python = ">=3.8"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Topic :: Scientific/Engineering :: Medical Science Apps.",
+    "Topic :: Database",
+]
 dependencies = [
     "psycopg2-binary",
     "neo4j",
@@ -13,6 +26,11 @@ dependencies = [
     "click",
     "pydantic-settings",
     "python-dotenv",
+]
+
+[project.optional-dependencies]
+test = [
+    "pytest",
 ]
 
 [project.scripts]
