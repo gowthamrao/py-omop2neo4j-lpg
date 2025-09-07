@@ -1,12 +1,15 @@
 Metadata-Version: 2.4
 Name: py-omop2neo4j-lpg
 Version: 0.1.0
-Summary: A Python package to migrate OMOP vocabulary from PostgreSQL to Neo4j LPG.
-Author-email: Gowtham Rao <rao@ohdsi.org>
+Summary: A Python package to orchestrate the migration of OMOP vocabulary tables from PostgreSQL to a Labeled Property Graph (LPG) in Neo4j.
+Author-email: Gowtham Rao <rao@ohdsi.org>, Jules <jules@agent.com>
+Project-URL: Homepage, https://github.com/ohdsi/py-omop2neo4j-lpg
+Project-URL: Bug Tracker, https://github.com/ohdsi/py-omop2neo4j-lpg/issues
 Classifier: Programming Language :: Python :: 3
 Classifier: License :: OSI Approved :: MIT License
 Classifier: Operating System :: OS Independent
-Classifier: Topic :: Scientific/Engineering :: Medical Science Apps.
+Classifier: Development Status :: 3 - Alpha
+Classifier: Intended Audience :: Science/Research
 Classifier: Topic :: Database
 Requires-Python: >=3.8
 Description-Content-Type: text/markdown
@@ -18,8 +21,6 @@ Requires-Dist: numpy
 Requires-Dist: click
 Requires-Dist: pydantic-settings
 Requires-Dist: python-dotenv
-Provides-Extra: test
-Requires-Dist: pytest; extra == "test"
 Dynamic: license-file
 
 # py-omop2neo4j-lpg
