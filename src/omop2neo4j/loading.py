@@ -6,14 +6,16 @@ logger = get_logger(__name__)
 
 # --- Neo4j Driver Setup ---
 
+
 def get_driver() -> Driver:
     """Establishes connection with the Neo4j database and returns a driver object."""
     return GraphDatabase.driver(
-        settings.NEO4J_URI,
-        auth=(settings.NEO4J_USER, settings.NEO4J_PASSWORD)
+        settings.NEO4J_URI, auth=(settings.NEO4J_USER, settings.NEO4J_PASSWORD)
     )
 
+
 # --- Helper for running queries ---
+
 
 def _execute_queries(driver: Driver, queries: list[str]):
     """Helper function to execute a list of Cypher queries."""
@@ -27,7 +29,9 @@ def _execute_queries(driver: Driver, queries: list[str]):
                 logger.error(e)
                 raise
 
+
 # --- Database Cleanup ---
+
 
 def clear_database(driver: Driver):
     """Drops all constraints and indexes, then deletes all nodes and relationships."""
@@ -36,8 +40,10 @@ def clear_database(driver: Driver):
         constraints = session.run("SHOW CONSTRAINTS YIELD name").data()
         indexes = session.run("SHOW INDEXES YIELD name").data()
 
-    drop_constraints = [f"DROP CONSTRAINT {c['name']}" for c in constraints if c['name'] is not None]
-    drop_indexes = [f"DROP INDEX {i['name']}" for i in indexes if i['name'] is not None]
+    drop_constraints = [
+        f"DROP CONSTRAINT {c['name']}" for c in constraints if c["name"] is not None
+    ]
+    drop_indexes = [f"DROP INDEX {i['name']}" for i in indexes if i["name"] is not None]
 
     if drop_constraints:
         logger.info("Dropping existing constraints...")
@@ -50,7 +56,9 @@ def clear_database(driver: Driver):
     _execute_queries(driver, ["MATCH (n) DETACH DELETE n"])
     logger.info("Database cleared successfully.")
 
+
 # --- Schema Setup ---
+
 
 def create_constraints_and_indexes(driver: Driver):
     """Creates constraints and indexes as defined in the FRD."""
@@ -65,7 +73,9 @@ def create_constraints_and_indexes(driver: Driver):
     _execute_queries(driver, queries)
     logger.info("Constraints and indexes created successfully.")
 
+
 # --- Data Loading Orchestrator ---
+
 
 def run_load_csv(batch_size: int | None = None):
     """
@@ -80,8 +90,12 @@ def run_load_csv(batch_size: int | None = None):
         create_constraints_and_indexes(driver)
 
         # Determine the batch size to use
-        effective_batch_size = batch_size if batch_size is not None else settings.LOAD_CSV_BATCH_SIZE
-        logger.info(f"Starting data loading process with batch size: {effective_batch_size}")
+        effective_batch_size = (
+            batch_size if batch_size is not None else settings.LOAD_CSV_BATCH_SIZE
+        )
+        logger.info(
+            f"Starting data loading process with batch size: {effective_batch_size}"
+        )
 
         queries = get_loading_queries(effective_batch_size)
         _execute_queries(driver, queries)
@@ -190,4 +204,10 @@ def get_loading_queries(batch_size: int) -> list[str]:
     }} IN TRANSACTIONS OF {batch_size} ROWS;
     """
 
-    return [load_domains, load_vocabularies, load_concepts, load_relationships, load_ancestors]
+    return [
+        load_domains,
+        load_vocabularies,
+        load_concepts,
+        load_relationships,
+        load_ancestors,
+    ]

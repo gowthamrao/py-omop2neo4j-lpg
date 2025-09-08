@@ -6,6 +6,7 @@ import json
 
 logger = get_logger(__name__)
 
+
 def get_node_counts(driver: Driver) -> dict[str, int]:
     """
     Counts nodes for each distinct combination of labels in the database.
@@ -24,10 +25,12 @@ def get_node_counts(driver: Driver) -> dict[str, int]:
         # ['Standard', 'Concept', 'Drug'] becomes 'Concept:Drug:Standard'
         counts = {
             ":".join(sorted(record["label_combination"])): record["count"]
-            for record in result if record["label_combination"]
+            for record in result
+            if record["label_combination"]
         }
         logger.info(f"Node counts by label combination: {json.dumps(counts, indent=2)}")
         return counts
+
 
 def get_relationship_counts(driver: Driver) -> dict[str, int]:
     """
@@ -45,6 +48,7 @@ def get_relationship_counts(driver: Driver) -> dict[str, int]:
         counts = {record["relationshipType"]: record["count"] for record in result}
         logger.info(f"Relationship counts: {json.dumps(counts, indent=2)}")
         return counts
+
 
 def verify_sample_concept(driver: Driver, concept_id: int = 1177480) -> dict | None:
     """
@@ -90,25 +94,29 @@ def verify_sample_concept(driver: Driver, concept_id: int = 1177480) -> dict | N
         # Clean up the relationships aggregation for better logging
         rels_summary = {}
         for item in record_dict.pop("relationships", []):
-            if item['rel_type']:
-                rels_summary[item['rel_type']] = {
-                    "count": len(item['neighbors']),
-                    "sample_neighbors": [n['name'] for n in item['neighbors'][:3]] # Show first 3
+            if item["rel_type"]:
+                rels_summary[item["rel_type"]] = {
+                    "count": len(item["neighbors"]),
+                    "sample_neighbors": [
+                        n["name"] for n in item["neighbors"][:3]
+                    ],  # Show first 3
                 }
-        record_dict['relationships_summary'] = rels_summary
+        record_dict["relationships_summary"] = rels_summary
 
         # Add ancestors summary
         ancestors_list = record_dict.pop("ancestors", [])
-        record_dict['ancestors_summary'] = {
+        record_dict["ancestors_summary"] = {
             "count": len(ancestors_list),
-            "sample_ancestors": [a['name'] for a in ancestors_list[:5]] # Show first 5
+            "sample_ancestors": [a["name"] for a in ancestors_list[:5]],  # Show first 5
         }
 
         # Sort labels for consistent output
-        if 'labels' in record_dict and record_dict['labels']:
-            record_dict['labels'] = sorted(record_dict['labels'])
+        if "labels" in record_dict and record_dict["labels"]:
+            record_dict["labels"] = sorted(record_dict["labels"])
 
-        logger.info(f"Structural validation for '{record_dict.get('name')}': \n{json.dumps(record_dict, indent=2)}")
+        logger.info(
+            f"Structural validation for '{record_dict.get('name')}': \n{json.dumps(record_dict, indent=2)}"
+        )
         return record_dict
 
 
@@ -123,13 +131,13 @@ def run_validation():
         driver = get_driver()
         node_counts = get_node_counts(driver)
         rel_counts = get_relationship_counts(driver)
-        sample_verification = verify_sample_concept(driver) # Using default ID
+        sample_verification = verify_sample_concept(driver)  # Using default ID
 
         # A successful run returns a dictionary of the results
         return {
             "node_counts_by_label_combination": node_counts,
             "relationship_counts_by_type": rel_counts,
-            "sample_concept_verification": sample_verification
+            "sample_concept_verification": sample_verification,
         }
 
     except Exception as e:

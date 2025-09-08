@@ -1,7 +1,0 @@
-psycopg2-binary
-neo4j
-pandas
-numpy
-click
-pydantic-settings
-python-dotenv

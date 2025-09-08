@@ -1,6 +1,7 @@
 import unittest
-from unittest.mock import MagicMock, patch
-from omop2neo4j_lpg import validation
+from unittest.mock import MagicMock
+from omop2neo4j import validation
+
 
 class TestValidation(unittest.TestCase):
 
@@ -65,11 +66,12 @@ class TestValidation(unittest.TestCase):
             "labels": ["Standard", "Drug", "Concept"],
             "synonym_count": 5,
             "relationships": [
-                {"rel_type": "IS_A", "neighbors": [{"name": "ACE Inhibitor", "id": 123}]}
+                {
+                    "rel_type": "IS_A",
+                    "neighbors": [{"name": "ACE Inhibitor", "id": 123}],
+                }
             ],
-            "ancestors": [
-                {"name": "Cardiovascular Agent", "id": 456}
-            ]
+            "ancestors": [{"name": "Cardiovascular Agent", "id": 456}],
         }
 
         # This mock needs to behave like a neo4j Record object,
@@ -86,11 +88,13 @@ class TestValidation(unittest.TestCase):
 
         # Assert
         self.assertIsNotNone(data)
-        self.assertEqual(data['name'], 'Enalapril')
-        self.assertEqual(data['labels'], ["Concept", "Drug", "Standard"])
-        self.assertIn('IS_A', data['relationships_summary'])
-        self.assertEqual(data['ancestors_summary']['count'], 1)
-        self.assertIn('Cardiovascular Agent', data['ancestors_summary']['sample_ancestors'])
+        self.assertEqual(data["name"], "Enalapril")
+        self.assertEqual(data["labels"], ["Concept", "Drug", "Standard"])
+        self.assertIn("IS_A", data["relationships_summary"])
+        self.assertEqual(data["ancestors_summary"]["count"], 1)
+        self.assertIn(
+            "Cardiovascular Agent", data["ancestors_summary"]["sample_ancestors"]
+        )
 
     def test_verify_sample_concept_not_found(self):
         # Arrange
@@ -108,5 +112,6 @@ class TestValidation(unittest.TestCase):
         # Assert
         self.assertIsNone(data)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     unittest.main()

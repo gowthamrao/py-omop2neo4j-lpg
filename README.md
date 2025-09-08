@@ -1,4 +1,4 @@
-# py-omop2neo4j-lpg
+# omop2neo4j
 
 A robust, high-performance Python package to orchestrate the migration of OMOP vocabulary tables from PostgreSQL to a mature Labeled Property Graph (LPG) in Neo4j.
 
@@ -59,7 +59,7 @@ docker-compose up -d
     ```bash
     # Clone the repository (if you haven't already)
     # git clone <repo_url>
-    # cd py-omop2neo4j-lpg
+    # cd omop2neo4j
 
     # Install
     pip install .

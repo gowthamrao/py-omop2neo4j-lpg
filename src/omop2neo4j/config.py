@@ -3,12 +3,14 @@ import sys
 from pydantic_settings import BaseSettings, SettingsConfigDict
 import os
 
+
 # --- Settings ---
 class Settings(BaseSettings):
     """
     Manages application settings using Pydantic.
     Reads from environment variables or a .env file.
     """
+
     # PostgreSQL Connection Settings
     POSTGRES_HOST: str = "localhost"
     POSTGRES_PORT: int = 5432
@@ -28,7 +30,10 @@ class Settings(BaseSettings):
     LOAD_CSV_BATCH_SIZE: int = 10000
     TRANSFORMATION_CHUNK_SIZE: int = 100000
 
-    model_config = SettingsConfigDict(env_file='.env', env_file_encoding='utf-8', extra='ignore')
+    model_config = SettingsConfigDict(
+        env_file=".env", env_file_encoding="utf-8", extra="ignore"
+    )
+
 
 settings = Settings()
 
@@ -36,6 +41,7 @@ settings = Settings()
 # Create export directory if it doesn't exist to store logs
 os.makedirs(settings.EXPORT_DIR, exist_ok=True)
 log_file_path = os.path.join(settings.EXPORT_DIR, settings.LOG_FILE)
+
 
 def get_logger(name: str) -> logging.Logger:
     """
@@ -51,7 +57,9 @@ def get_logger(name: str) -> logging.Logger:
         file_handler = logging.FileHandler(log_file_path)
 
         # Create formatters and add it to handlers
-        formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        formatter = logging.Formatter(
+            "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+        )
         stream_handler.setFormatter(formatter)
         file_handler.setFormatter(formatter)
 
@@ -60,6 +68,7 @@ def get_logger(name: str) -> logging.Logger:
         logger.addHandler(file_handler)
 
     return logger
+
 
 # A default logger for general use
 logger = get_logger("omop2neo4j")

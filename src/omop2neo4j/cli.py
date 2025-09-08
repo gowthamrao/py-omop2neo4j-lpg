@@ -16,10 +16,12 @@ from .config import get_logger, settings
 
 logger = get_logger(__name__)
 
+
 @click.group()
 def cli():
     """A CLI tool to migrate OMOP vocabulary from PostgreSQL to Neo4j."""
     pass
+
 
 @cli.command()
 def extract():
@@ -34,6 +36,7 @@ def extract():
         logger.error(f"CLI: An error occurred during extraction: {e}")
         # click.echo(f"Error during extraction: {e}") # This would print to console
         # To keep logs clean, we just log it. The logger also prints to stdout.
+
 
 @cli.command()
 def clear_db():
@@ -50,8 +53,14 @@ def clear_db():
     except Exception as e:
         logger.error(f"CLI: An error occurred while clearing the database: {e}")
 
+
 @cli.command()
-@click.option('--batch-size', default=None, type=int, help='Override LOAD_CSV_BATCH_SIZE from settings.')
+@click.option(
+    "--batch-size",
+    default=None,
+    type=int,
+    help="Override LOAD_CSV_BATCH_SIZE from settings.",
+)
 def load_csv(batch_size):
     """
     Loads data from CSV files into Neo4j using the online LOAD CSV method.
@@ -66,9 +75,22 @@ def load_csv(batch_size):
     except Exception as e:
         logger.error(f"CLI: An error occurred during the LOAD CSV process: {e}")
 
+
 @cli.command()
-@click.option('--chunk-size', default=settings.TRANSFORMATION_CHUNK_SIZE, show_default=True, type=int, help='Number of rows to process per chunk for large files.')
-@click.option('--import-dir', default='bulk_import', show_default=True, type=click.Path(), help='Directory to save the formatted files for neo4j-admin import.')
+@click.option(
+    "--chunk-size",
+    default=settings.TRANSFORMATION_CHUNK_SIZE,
+    show_default=True,
+    type=int,
+    help="Number of rows to process per chunk for large files.",
+)
+@click.option(
+    "--import-dir",
+    default="bulk_import",
+    show_default=True,
+    type=click.Path(),
+    help="Directory to save the formatted files for neo4j-admin import.",
+)
 def prepare_bulk(chunk_size, import_dir):
     """
     Prepares data files for the offline neo4j-admin import tool.
@@ -77,16 +99,20 @@ def prepare_bulk(chunk_size, import_dir):
     logger.info("CLI: Starting bulk import preparation process...")
     try:
         command = transformation.prepare_for_bulk_import(
-            chunk_size=chunk_size,
-            import_dir=import_dir
+            chunk_size=chunk_size, import_dir=import_dir
         )
         logger.info("CLI: Bulk import preparation completed successfully.")
         click.secho("--- Neo4j-Admin Import Command ---", fg="green", bold=True)
         click.secho("1. Stop the Neo4j database service.", fg="yellow")
-        click.secho(f"2. Run the following command from your terminal:", fg="yellow")
+        click.secho("2. Run the following command from your terminal:", fg="yellow")
         click.echo(command)
-        click.secho("\n3. After the import is complete, start the Neo4j service.", fg="yellow")
-        click.secho("4. Run `omop2neo4j create-indexes` to build the database schema.", fg="yellow")
+        click.secho(
+            "\n3. After the import is complete, start the Neo4j service.", fg="yellow"
+        )
+        click.secho(
+            "4. Run `omop2neo4j create-indexes` to build the database schema.",
+            fg="yellow",
+        )
 
     except Exception as e:
         logger.error(f"CLI: An error occurred during bulk import preparation: {e}")
@@ -107,6 +133,7 @@ def create_indexes():
         logger.info("CLI: Index and constraint creation completed successfully.")
     except Exception as e:
         logger.error(f"CLI: An error occurred during index/constraint creation: {e}")
+
 
 @cli.command()
 def validate():
@@ -129,5 +156,5 @@ def validate():
         click.secho(f"\nA critical error occurred: {e}", fg="red")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     cli()
