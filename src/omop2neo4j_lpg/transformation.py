@@ -47,20 +47,20 @@ def prepare_for_bulk_import(chunk_size: int, import_dir: str):
     # Domains
     df_domain = pd.read_csv(paths['domain_in'], dtype=str)
     df_domain[':LABEL'] = 'Domain'
-    df_domain.rename(columns={'domain_id': ':ID(Domain)'}, inplace=True)
+    df_domain.rename(columns={'domain_id': ':ID'}, inplace=True)
     df_domain.to_csv(paths['domain_nodes'], index=False)
 
     # Vocabularies
     df_vocab = pd.read_csv(paths['vocabulary_in'], dtype=str)
     df_vocab[':LABEL'] = 'Vocabulary'
-    df_vocab.rename(columns={'vocabulary_id': ':ID(Vocabulary)'}, inplace=True)
+    df_vocab.rename(columns={'vocabulary_id': ':ID'}, inplace=True)
     df_vocab.to_csv(paths['vocabulary_nodes'], index=False)
     logger.info("Metadata processing complete.")
 
     # --- Process Concepts (Chunked) ---
     logger.info(f"Processing concepts in chunks of {chunk_size}...")
     concept_cols = {
-        "concept_id": ":ID(Concept)", "concept_name": "name:string",
+        "concept_id": ":ID", "concept_name": "name:string",
         "concept_code": "concept_code:string",
         "standard_concept": "standard_concept:string", "invalid_reason": "invalid_reason:string",
         "valid_start_date": "valid_start_date:date", "valid_end_date": "valid_end_date:date",
@@ -68,6 +68,9 @@ def prepare_for_bulk_import(chunk_size: int, import_dir: str):
     }
     is_first_chunk = True
     for chunk in pd.read_csv(paths['concept_in'], chunksize=chunk_size, dtype=str, keep_default_na=False):
+        # Hold original columns for relationship creation
+        original_chunk = chunk.copy()
+
         # 1. Prepare Concept Nodes
         chunk[':LABEL'] = 'Concept;' + chunk['domain_id'].apply(standardize_label)
         chunk.loc[chunk['standard_concept'] == 'S', ':LABEL'] += ';Standard'
@@ -81,19 +84,19 @@ def prepare_for_bulk_import(chunk_size: int, import_dir: str):
 
         # 2. Prepare Contextual Relationships
         # IN_DOMAIN
-        rels_domain = chunk[[':ID(Concept)', 'domain_id']].copy()
+        rels_domain = original_chunk[['concept_id', 'domain_id']].copy()
         rels_domain.rename(columns={
-            ':ID(Concept)': ':START_ID(Concept)',
-            'domain_id': ':END_ID(Domain)'
+            'concept_id': ':START_ID',
+            'domain_id': ':END_ID'
         }, inplace=True)
         rels_domain[':TYPE'] = 'IN_DOMAIN'
         rels_domain.to_csv(paths['in_domain_rels'], mode='a', index=False, header=is_first_chunk)
 
         # FROM_VOCABULARY
-        rels_vocab = chunk[[':ID(Concept)', 'vocabulary_id']].copy()
+        rels_vocab = original_chunk[['concept_id', 'vocabulary_id']].copy()
         rels_vocab.rename(columns={
-            ':ID(Concept)': ':START_ID(Concept)',
-            'vocabulary_id': ':END_ID(Vocabulary)'
+            'concept_id': ':START_ID',
+            'vocabulary_id': ':END_ID'
         }, inplace=True)
         rels_vocab[':TYPE'] = 'FROM_VOCABULARY'
         rels_vocab.to_csv(paths['from_vocab_rels'], mode='a', index=False, header=is_first_chunk)
@@ -106,8 +109,8 @@ def prepare_for_bulk_import(chunk_size: int, import_dir: str):
     is_first_chunk = True
     for chunk in pd.read_csv(paths['relationship_in'], chunksize=chunk_size, dtype=str, keep_default_na=False):
         chunk.rename(columns={
-            'concept_id_1': ':START_ID(Concept)',
-            'concept_id_2': ':END_ID(Concept)',
+            'concept_id_1': ':START_ID',
+            'concept_id_2': ':END_ID',
             'valid_start_date': 'valid_start_date:date',
             'valid_end_date': 'valid_end_date:date',
             'invalid_reason': 'invalid_reason:string'
@@ -123,8 +126,8 @@ def prepare_for_bulk_import(chunk_size: int, import_dir: str):
     is_first_chunk = True
     for chunk in pd.read_csv(paths['ancestor_in'], chunksize=chunk_size, dtype=str, keep_default_na=False):
         chunk.rename(columns={
-            'descendant_concept_id': ':START_ID(Concept)',
-            'ancestor_concept_id': ':END_ID(Concept)',
+            'descendant_concept_id': ':START_ID',
+            'ancestor_concept_id': ':END_ID',
             'min_levels_of_separation': 'min_levels:int',
             'max_levels_of_separation': 'max_levels:int'
         }, inplace=True)
