@@ -112,21 +112,23 @@ def create_indexes():
 @click.option('--concept-id', default=1177480, show_default=True, type=int, help='Concept ID for the structural validation check.')
 def validate(concept_id):
     """
-    Runs validation checks against the Neo4j database.
+    Runs all validation checks against the Neo4j database.
     """
-    logger.info(f"CLI: Starting validation process for concept {concept_id}...")
+    logger.info(f"CLI: Starting validation process...")
     click.secho("--- Running Database Validation ---", fg="cyan")
-
     driver = None
     try:
         driver = loading.get_driver()
 
         # 1. Node Counts
-        click.secho("\n[1/3] Node Counts by Label:", bold=True)
+        click.secho("\n[1/3] Node Counts by Label Combination:", bold=True)
         node_counts = validation.get_node_counts(driver)
         if node_counts:
-            for label, count in node_counts.items():
+            sorted_counts = sorted(node_counts.items(), key=lambda item: item[1], reverse=True)
+            for label, count in sorted_counts[:15]: # Show top 15
                 click.echo(f"  - {label}: {count:,}")
+            if len(sorted_counts) > 15:
+                click.echo(f"  ... and {len(sorted_counts) - 15} more combinations.")
         else:
             click.secho("  No nodes found.", fg="yellow")
 
@@ -146,10 +148,20 @@ def validate(concept_id):
             click.echo(f"  - Name: {sample_data.get('name')}")
             click.echo(f"  - Labels: {sample_data.get('labels')}")
             click.echo(f"  - Synonym Count: {sample_data.get('synonym_count')}")
-            click.echo("  - Relationships:")
-            if sample_data.get('relationships'):
-                for rel_type, data in sample_data['relationships'].items():
-                    click.echo(f"    - {rel_type} ({data['count']}): {data['sample_neighbors']}")
+
+            click.echo("  - Relationships Summary:")
+            rels_summary = sample_data.get('relationships_summary', {})
+            if rels_summary:
+                for rel_type, data in rels_summary.items():
+                    click.echo(f"    - {rel_type} (count: {data['count']}): {data['sample_neighbors']}")
+            else:
+                 click.echo("    - None found.")
+
+            click.echo("  - Ancestors Summary:")
+            ancestors_summary = sample_data.get('ancestors_summary', {})
+            if ancestors_summary and ancestors_summary.get('count', 0) > 0:
+                 click.echo(f"    - Count: {ancestors_summary.get('count')}")
+                 click.echo(f"    - Sample: {ancestors_summary.get('sample_ancestors')}")
             else:
                  click.echo("    - None found.")
         else:
@@ -159,7 +171,7 @@ def validate(concept_id):
 
     except Exception as e:
         logger.error(f"CLI: An error occurred during validation: {e}")
-        click.secho(f"Error during validation: {e}", fg="red")
+        click.secho(f"\nError during validation: {e}", fg="red")
     finally:
         if driver:
             driver.close()
