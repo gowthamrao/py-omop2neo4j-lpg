@@ -6,8 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "py-omop2neo4j-lpg"
 version = "0.1.0"
 authors = [
-    { name="Gowtham Rao", email="rao@ohdsi.org" },
-    { name="Jules", email="jules@agent.com" }
+    { name="Gowtham Rao", email="rao@ohdsi.org" }
 ]
 description = "A Python package to orchestrate the migration of OMOP vocabulary tables from PostgreSQL to a Labeled Property Graph (LPG) in Neo4j."
 readme = "README.md"
