@@ -153,7 +153,7 @@ def get_loading_queries(batch_size: int) -> list[str]:
             row.standard_concept = 'S',
             'SET c:Standard RETURN c',
             '',
-            {c:c}
+            {{c:c}}
         ) YIELD value
         WITH c, row
         MATCH (d:Domain {{domain_id: row.domain_id}})
