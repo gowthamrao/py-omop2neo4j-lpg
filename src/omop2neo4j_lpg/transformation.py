@@ -82,13 +82,19 @@ def prepare_for_bulk_import(chunk_size: int, import_dir: str):
         # 2. Prepare Contextual Relationships
         # IN_DOMAIN
         rels_domain = chunk[[':ID(Concept)', 'domain_id']].copy()
-        rels_domain.rename(columns={'domain_id': ':END_ID(Domain)'}, inplace=True)
+        rels_domain.rename(columns={
+            ':ID(Concept)': ':START_ID(Concept)',
+            'domain_id': ':END_ID(Domain)'
+        }, inplace=True)
         rels_domain[':TYPE'] = 'IN_DOMAIN'
         rels_domain.to_csv(paths['in_domain_rels'], mode='a', index=False, header=is_first_chunk)
 
         # FROM_VOCABULARY
         rels_vocab = chunk[[':ID(Concept)', 'vocabulary_id']].copy()
-        rels_vocab.rename(columns={'vocabulary_id': ':END_ID(Vocabulary)'}, inplace=True)
+        rels_vocab.rename(columns={
+            ':ID(Concept)': ':START_ID(Concept)',
+            'vocabulary_id': ':END_ID(Vocabulary)'
+        }, inplace=True)
         rels_vocab[':TYPE'] = 'FROM_VOCABULARY'
         rels_vocab.to_csv(paths['from_vocab_rels'], mode='a', index=False, header=is_first_chunk)
 
