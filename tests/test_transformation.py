@@ -81,8 +81,11 @@ class TestTransformation(unittest.TestCase):
 
         # --- Assert Command ---
         self.assertIn("neo4j-admin database import full", command)
-        self.assertIn(f"--nodes='{self.test_import_dir}/nodes_concept_header.csv'", command)
-        self.assertIn(f"--relationships='{self.test_import_dir}/rels_semantic_header.csv'", command)
+        # Check that the command now refers to the data files directly, not header files
+        self.assertIn("--nodes='nodes_concept.csv'", command)
+        self.assertIn("--relationships='rels_semantic.csv'", command)
+        # Check that header files are NOT mentioned
+        self.assertNotIn("header", command)
 
         # --- Assert File Creation ---
         self.assertTrue(os.path.exists(os.path.join(self.test_import_dir, 'nodes_concept.csv')))
