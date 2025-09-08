@@ -1,5 +1,6 @@
 import unittest
-from omop2neo4j_lpg.utils import standardize_label, standardize_reltype
+from omop2neo4j.utils import standardize_label, standardize_reltype
+
 
 class TestUtils(unittest.TestCase):
 
@@ -42,5 +43,6 @@ class TestUtils(unittest.TestCase):
             with self.subTest(input=input_str):
                 self.assertEqual(standardize_reltype(input_str), expected_output)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     unittest.main()

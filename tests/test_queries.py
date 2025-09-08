@@ -1,7 +1,8 @@
 import pytest
-from omop2neo4j_lpg import extraction, loading
+from omop2neo4j import extraction, loading
 
 # --- Tests for extraction.py ---
+
 
 def test_get_sql_queries():
     """
@@ -16,7 +17,7 @@ def test_get_sql_queries():
         "domain.csv",
         "vocabulary.csv",
         "concept_relationship.csv",
-        "concept_ancestor.csv"
+        "concept_ancestor.csv",
     ]
     assert all(key in queries for key in expected_keys)
 
@@ -30,7 +31,9 @@ def test_get_sql_queries():
     domain_query = queries["domain.csv"]
     assert f"COPY (SELECT * FROM {schema}.domain) TO STDOUT" in domain_query
 
+
 # --- Tests for loading.py ---
+
 
 @pytest.mark.parametrize("batch_size", [5000, 20000])
 def test_get_loading_queries(batch_size):
@@ -44,11 +47,19 @@ def test_get_loading_queries(batch_size):
 
     # --- Test Concept Loading Query ---
     concept_query = queries[2]
-    assert "LOAD CSV WITH HEADERS FROM 'file:///concepts_optimized.csv' AS row" in concept_query
+    assert (
+        "LOAD CSV WITH HEADERS FROM 'file:///concepts_optimized.csv' AS row"
+        in concept_query
+    )
     # Check for the robust label standardization logic
-    assert "apoc.text.upperCamelCase(apoc.text.regreplace(row.domain_id, '[^A-Za-z0-9]+', ' '))" in concept_query
+    assert (
+        "apoc.text.upperCamelCase(apoc.text.regreplace(row.domain_id, '[^A-Za-z0-9]+', ' '))"
+        in concept_query
+    )
     # Check for conditional standard label
-    assert "CALL apoc.do.when(\n            row.standard_concept = 'S'," in concept_query
+    assert (
+        "CALL apoc.do.when(\n            row.standard_concept = 'S'," in concept_query
+    )
     # Check for batching
     assert f"}} IN TRANSACTIONS OF {batch_size} ROWS;" in concept_query
     # Check for date conversion and synonym splitting
@@ -57,19 +68,31 @@ def test_get_loading_queries(batch_size):
 
     # --- Test Relationship Loading Query ---
     relationship_query = queries[3]
-    assert "LOAD CSV WITH HEADERS FROM 'file:///concept_relationship.csv' AS row" in relationship_query
+    assert (
+        "LOAD CSV WITH HEADERS FROM 'file:///concept_relationship.csv' AS row"
+        in relationship_query
+    )
     # Check for robust reltype standardization
-    assert "toupper(apoc.text.replace(row.relationship_id, '[^A-Za-z0-9_]+', '_'))" in relationship_query
+    assert (
+        "toupper(apoc.text.replace(row.relationship_id, '[^A-Za-z0-9_]+', '_'))"
+        in relationship_query
+    )
     # Check for batching
     assert f"}} IN TRANSACTIONS OF {batch_size} ROWS;" in relationship_query
 
     # --- Test Ancestor Loading Query ---
     ancestor_query = queries[4]
-    assert "LOAD CSV WITH HEADERS FROM 'file:///concept_ancestor.csv' AS row" in ancestor_query
+    assert (
+        "LOAD CSV WITH HEADERS FROM 'file:///concept_ancestor.csv' AS row"
+        in ancestor_query
+    )
     assert "CREATE (d)-[r:HAS_ANCESTOR]->(a)" in ancestor_query
-    assert "SET r.min_levels = toInteger(row.min_levels_of_separation)" in ancestor_query
+    assert (
+        "SET r.min_levels = toInteger(row.min_levels_of_separation)" in ancestor_query
+    )
     # Check for batching
     assert f"}} IN TRANSACTIONS OF {batch_size} ROWS;" in ancestor_query
+
 
 def test_get_loading_queries_uses_correct_batch_size():
     """

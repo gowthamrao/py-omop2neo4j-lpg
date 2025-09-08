@@ -2,6 +2,7 @@ import os
 import psycopg2
 from .config import settings, logger
 
+
 def get_sql_queries(schema: str) -> dict[str, str]:
     """
     Returns a dictionary of table names and their corresponding COPY SQL queries.
@@ -42,8 +43,9 @@ def get_sql_queries(schema: str) -> dict[str, str]:
                 SELECT descendant_concept_id, ancestor_concept_id, min_levels_of_separation, max_levels_of_separation
                 FROM {schema}.concept_ancestor
             ) TO STDOUT WITH CSV HEADER FORCE QUOTE *;
-        """
+        """,
     }
+
 
 def export_tables_to_csv():
     """
