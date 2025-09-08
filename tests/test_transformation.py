@@ -81,41 +81,85 @@ class TestTransformation(unittest.TestCase):
 
         # --- Assert Command ---
         self.assertIn("neo4j-admin database import full", command)
-        # Check that the command now refers to the data files directly, not header files
+        # Check that the command refers to the correct data files.
+        # Modern neo4j-admin expects these files to contain their own headers.
         self.assertIn("--nodes='nodes_concept.csv'", command)
+        self.assertIn("--nodes='nodes_domain.csv'", command)
+        self.assertIn("--nodes='nodes_vocabulary.csv'", command)
         self.assertIn("--relationships='rels_semantic.csv'", command)
-        # Check that header files are NOT mentioned
-        self.assertNotIn("header", command)
+        self.assertIn("--relationships='rels_ancestor.csv'", command)
+        self.assertIn("--relationships='rels_in_domain.csv'", command)
+        self.assertIn("--relationships='rels_from_vocabulary.csv'", command)
 
-        # --- Assert File Creation ---
-        self.assertTrue(os.path.exists(os.path.join(self.test_import_dir, 'nodes_concept.csv')))
-        self.assertTrue(os.path.exists(os.path.join(self.test_import_dir, 'rels_semantic.csv')))
-        self.assertTrue(os.path.exists(os.path.join(self.test_import_dir, 'rels_ancestor.csv')))
+        # --- Assert All Files Are Created ---
+        expected_files = [
+            'nodes_concept.csv', 'rels_semantic.csv', 'rels_ancestor.csv',
+            'nodes_domain.csv', 'nodes_vocabulary.csv', 'rels_in_domain.csv',
+            'rels_from_vocabulary.csv'
+        ]
+        for f in expected_files:
+            self.assertTrue(os.path.exists(os.path.join(self.test_import_dir, f)), f"{f} was not created")
 
-        # --- Assert Content of Key Files ---
+        # --- Assert Content of All Generated Files ---
+
+        # Domain Nodes
+        df_domain_nodes = pd.read_csv(os.path.join(self.test_import_dir, 'nodes_domain.csv'), dtype=str)
+        self.assertEqual(len(df_domain_nodes), 2)
+        self.assertListEqual(list(df_domain_nodes.columns), [':ID(Domain)', 'domain_name', 'domain_concept_id', ':LABEL'])
+        self.assertTrue(all(df_domain_nodes[':LABEL'] == 'Domain'))
+        self.assertEqual(df_domain_nodes[df_domain_nodes[':ID(Domain)'] == 'Drug']['domain_name'].iloc[0], 'Drug')
+
+        # Vocabulary Nodes
+        df_vocab_nodes = pd.read_csv(os.path.join(self.test_import_dir, 'nodes_vocabulary.csv'), dtype=str)
+        self.assertEqual(len(df_vocab_nodes), 2)
+        self.assertIn(':ID(Vocabulary)', df_vocab_nodes.columns)
+        self.assertTrue(all(df_vocab_nodes[':LABEL'] == 'Vocabulary'))
+        self.assertEqual(df_vocab_nodes[df_vocab_nodes[':ID(Vocabulary)'] == 'RxNorm']['vocabulary_name'].iloc[0], 'RxNorm')
+
         # Concept Nodes
-        df_nodes = pd.read_csv(os.path.join(self.test_import_dir, 'nodes_concept.csv'))
-        self.assertEqual(len(df_nodes), 3)
-        self.assertIn(':ID(Concept)', df_nodes.columns)
-        self.assertIn(':LABEL', df_nodes.columns)
+        df_concept_nodes = pd.read_csv(os.path.join(self.test_import_dir, 'nodes_concept.csv'))
+        self.assertEqual(len(df_concept_nodes), 3)
+        self.assertIn(':ID(Concept)', df_concept_nodes.columns)
+        self.assertIn(':LABEL', df_concept_nodes.columns)
         # Check standard concept label
-        aspirin_row = df_nodes[df_nodes[':ID(Concept)'] == 1001]
+        aspirin_row = df_concept_nodes[df_concept_nodes[':ID(Concept)'] == 1001]
         self.assertEqual(aspirin_row[':LABEL'].iloc[0], 'Concept;Drug;Standard')
-        # Check sanitized label
-        painkiller_row = df_nodes[df_nodes[':ID(Concept)'] == 1003]
+        # Check sanitized label for "Drug/Device"
+        painkiller_row = df_concept_nodes[df_concept_nodes[':ID(Concept)'] == 1003]
         self.assertEqual(painkiller_row[':LABEL'].iloc[0], 'Concept;DrugDevice')
         # Check synonyms format
         self.assertEqual(painkiller_row['synonyms:string[]'].iloc[0], 'pain reliever|analgesic')
 
+        # IN_DOMAIN Relationships
+        df_domain_rels = pd.read_csv(os.path.join(self.test_import_dir, 'rels_in_domain.csv'))
+        self.assertEqual(len(df_domain_rels), 3)
+        self.assertListEqual(list(df_domain_rels.columns), [':START_ID(Concept)', ':END_ID(Domain)', ':TYPE'])
+        self.assertTrue(all(df_domain_rels[':TYPE'] == 'IN_DOMAIN'))
+        self.assertEqual(df_domain_rels[df_domain_rels[':START_ID(Concept)'] == 1001][':END_ID(Domain)'].iloc[0], 'Drug')
+
+        # FROM_VOCABULARY Relationships
+        df_vocab_rels = pd.read_csv(os.path.join(self.test_import_dir, 'rels_from_vocabulary.csv'))
+        self.assertEqual(len(df_vocab_rels), 3)
+        self.assertListEqual(list(df_vocab_rels.columns), [':START_ID(Concept)', ':END_ID(Vocabulary)', ':TYPE'])
+        self.assertTrue(all(df_vocab_rels[':TYPE'] == 'FROM_VOCABULARY'))
+        self.assertEqual(df_vocab_rels[df_vocab_rels[':START_ID(Concept)'] == 1001][':END_ID(Vocabulary)'].iloc[0], 'RxNorm')
+
         # Semantic Relationships
-        df_rels = pd.read_csv(os.path.join(self.test_import_dir, 'rels_semantic.csv'))
-        self.assertEqual(len(df_rels), 2)
-        self.assertIn(':START_ID(Concept)', df_rels.columns)
-        self.assertIn(':END_ID(Concept)', df_rels.columns)
-        self.assertIn(':TYPE', df_rels.columns)
+        df_semantic_rels = pd.read_csv(os.path.join(self.test_import_dir, 'rels_semantic.csv'))
+        self.assertEqual(len(df_semantic_rels), 2)
+        self.assertIn(':START_ID(Concept)', df_semantic_rels.columns)
+        self.assertIn(':END_ID(Concept)', df_semantic_rels.columns)
+        self.assertIn(':TYPE', df_semantic_rels.columns)
         # Check standardized reltype
-        maps_to_row = df_rels[df_rels[':START_ID(Concept)'] == 1003]
+        maps_to_row = df_semantic_rels[df_semantic_rels[':START_ID(Concept)'] == 1003]
         self.assertEqual(maps_to_row[':TYPE'].iloc[0], 'MAPS_TO')
+
+        # Ancestor Relationships
+        df_ancestor_rels = pd.read_csv(os.path.join(self.test_import_dir, 'rels_ancestor.csv'))
+        self.assertEqual(len(df_ancestor_rels), 1)
+        self.assertListEqual(list(df_ancestor_rels.columns), [':START_ID(Concept)', ':END_ID(Concept)', 'min_levels:int', 'max_levels:int', ':TYPE'])
+        self.assertEqual(df_ancestor_rels[':TYPE'].iloc[0], 'HAS_ANCESTOR')
+        self.assertEqual(df_ancestor_rels['min_levels:int'].iloc[0], 1)
 
 if __name__ == '__main__':
     unittest.main()

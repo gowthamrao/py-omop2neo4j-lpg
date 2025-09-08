@@ -67,7 +67,7 @@ def create_constraints_and_indexes(driver: Driver):
 
 # --- Data Loading Orchestrator ---
 
-def run_load_csv():
+def run_load_csv(batch_size: int | None = None):
     """
     Main orchestrator for the LOAD CSV method.
     Connects to Neo4j, clears the DB, sets up schema, and loads all data.
@@ -79,10 +79,11 @@ def run_load_csv():
         clear_database(driver)
         create_constraints_and_indexes(driver)
 
-        logger.info("Starting data loading process...")
-        batch_size = settings.LOAD_CSV_BATCH_SIZE
+        # Determine the batch size to use
+        effective_batch_size = batch_size if batch_size is not None else settings.LOAD_CSV_BATCH_SIZE
+        logger.info(f"Starting data loading process with batch size: {effective_batch_size}")
 
-        queries = get_loading_queries(batch_size)
+        queries = get_loading_queries(effective_batch_size)
         _execute_queries(driver, queries)
 
         logger.info("All data loading tasks completed successfully.")
@@ -124,6 +125,7 @@ def get_loading_queries(batch_size: int) -> list[str]:
     load_concepts = f"""
     CALL {{
         LOAD CSV WITH HEADERS FROM 'file:///concepts_optimized.csv' AS row
+        // 1. Create the Concept node with base properties
         CREATE (c:Concept {{
             concept_id: toInteger(row.concept_id),
             name: row.concept_name,
@@ -131,15 +133,22 @@ def get_loading_queries(batch_size: int) -> list[str]:
             vocabulary_id: row.vocabulary_id,
             concept_class_id: row.concept_class_id,
             standard_concept: row.standard_concept,
-            code: row.concept_code,
+            concept_code: row.concept_code,
             valid_start_date: date(row.valid_start_date),
             valid_end_date: date(row.valid_end_date),
             invalid_reason: row.invalid_reason,
             synonyms: CASE WHEN row.synonyms IS NOT NULL THEN split(row.synonyms, '|') ELSE [] END
         }})
+
+        // 2. Add dynamic and conditional labels
         WITH c, row
-        CALL apoc.create.addLabels(c, [apoc.text.upperCamelCase(row.domain_id)]) YIELD node
+        // Sanitize domain_id to create a valid label (e.g., "Drug/Ingredient" -> "DrugIngredient")
+        // This mimics the logic from utils.standardize_label
+        WITH c, row, apoc.text.upperCamelCase(apoc.text.regreplace(row.domain_id, '[^A-Za-z0-9]+', ' ')) AS standardizedLabel
+        CALL apoc.create.addLabels(c, [standardizedLabel]) YIELD node
+
         WITH c, row
+        // Add :Standard label conditionally for optimized queries
         CALL apoc.do.when(
             row.standard_concept = 'S',
             'SET c:Standard', '', {{c:c}}

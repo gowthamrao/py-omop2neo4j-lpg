@@ -1,71 +1,66 @@
 import logging
 import sys
-from pathlib import Path
-
 from pydantic_settings import BaseSettings, SettingsConfigDict
+import os
 
-# --- Project Root Directory ---
-# This helps in creating absolute paths for file operations, like the export dir or .env file.
-ROOT_DIR = Path(__file__).resolve().parents[2]
-DEFAULT_EXPORT_DIR = ROOT_DIR / "export"
-
-
-# --- Pydantic Settings ---
-# All configuration is managed here, loaded from environment variables or a .env file.
+# --- Settings ---
 class Settings(BaseSettings):
     """
-    Manages application configuration using Pydantic.
+    Manages application settings using Pydantic.
     Reads from environment variables or a .env file.
     """
-    # PostgreSQL Connection
-    POSTGRES_USER: str = "postgres"
-    POSTGRES_PASSWORD: str = "password"
+    # PostgreSQL Connection Settings
     POSTGRES_HOST: str = "localhost"
     POSTGRES_PORT: int = 5432
+    POSTGRES_USER: str = "postgres"
+    POSTGRES_PASSWORD: str  # No default value for secrets
     POSTGRES_DB: str = "ohdsi"
-    OMOP_SCHEMA: str = "cdm_synthea_v1"
+    OMOP_SCHEMA: str = "omop_cdm"
 
-    # Neo4j Connection
-    NEO4J_URI: str = "neo4j://localhost:7687"
+    # Neo4j Connection Settings
+    NEO4J_URI: str = "bolt://localhost:7687"
     NEO4J_USER: str = "neo4j"
-    NEO4J_PASSWORD: str = "password"
+    NEO4J_PASSWORD: str  # No default value for secrets
 
-    # Data Directories
-    EXPORT_DIR: Path = DEFAULT_EXPORT_DIR
-
-    # Tuning Parameters
+    # ETL Configuration
+    EXPORT_DIR: str = "export"
+    LOG_FILE: str = "omop2neo4j.log"
     LOAD_CSV_BATCH_SIZE: int = 10000
     TRANSFORMATION_CHUNK_SIZE: int = 100000
 
-    model_config = SettingsConfigDict(
-        env_file=str(ROOT_DIR / ".env"),
-        env_file_encoding="utf-8",
-        case_sensitive=False,
-    )
+    model_config = SettingsConfigDict(env_file='.env', env_file_encoding='utf-8', extra='ignore')
 
-
-# --- Instantiate Settings ---
-# A single, global instance of the settings for the application.
 settings = Settings()
 
-# --- Create Export Directory ---
-# The directory for CSV exports is created on startup if it doesn't exist.
-settings.EXPORT_DIR.mkdir(parents=True, exist_ok=True)
+# --- Logging ---
+# Create export directory if it doesn't exist to store logs
+os.makedirs(settings.EXPORT_DIR, exist_ok=True)
+log_file_path = os.path.join(settings.EXPORT_DIR, settings.LOG_FILE)
 
-
-# --- Logging Configuration ---
-# A structured and consistent logging setup for the entire application.
 def get_logger(name: str) -> logging.Logger:
     """
     Configures and returns a logger instance.
     """
-    log_format = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-    logging.basicConfig(
-        level=logging.INFO,
-        format=log_format,
-        handlers=[
-            logging.FileHandler(ROOT_DIR / "omop2neo4j.log"),
-            logging.StreamHandler(sys.stdout),
-        ],
-    )
-    return logging.getLogger(name)
+    logger = logging.getLogger(name)
+    logger.setLevel(logging.INFO)
+
+    # Prevent adding handlers multiple times
+    if not logger.handlers:
+        # Create handlers
+        stream_handler = logging.StreamHandler(sys.stdout)
+        file_handler = logging.FileHandler(log_file_path)
+
+        # Create formatters and add it to handlers
+        formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        stream_handler.setFormatter(formatter)
+        file_handler.setFormatter(formatter)
+
+        # Add handlers to the logger
+        logger.addHandler(stream_handler)
+        logger.addHandler(file_handler)
+
+    return logger
+
+# A default logger for general use
+logger = get_logger("omop2neo4j")
+logger.info("Configuration loaded and logger initialized.")
