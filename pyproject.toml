@@ -1,0 +1,37 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "omop2neo4j"
+version = "0.1.0"
+authors = [
+    { name="Gowtham Rao", email="rao@ohdsi.org" }
+]
+description = "A Python package to orchestrate the migration of OMOP vocabulary tables from PostgreSQL to a Labeled Property Graph (LPG) in Neo4j."
+readme = "README.md"
+requires-python = ">=3.8"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "Topic :: Database",
+]
+dependencies = [
+    "psycopg2-binary",
+    "neo4j",
+    "pandas",
+    "numpy",
+    "click",
+    "pydantic-settings",
+    "python-dotenv"
+]
+
+[project.scripts]
+omop2neo4j = "omop2neo4j.cli:cli"
+
+[project.urls]
+"Homepage" = "https://github.com/ohdsi/omop2neo4j" # Placeholder
+"Bug Tracker" = "https://github.com/ohdsi/omop2neo4j/issues" # Placeholder
