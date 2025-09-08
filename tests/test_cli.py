@@ -50,31 +50,32 @@ class TestCli(unittest.TestCase):
         mock_get_driver.assert_called_once()
         mock_create_indexes.assert_called_once()
 
-    @patch('omop2neo4j_lpg.validation.verify_sample_concept')
-    @patch('omop2neo4j_lpg.validation.get_relationship_counts')
-    @patch('omop2neo4j_lpg.validation.get_node_counts')
-    @patch('omop2neo4j_lpg.loading.get_driver')
-    def test_validate_command(self, mock_get_driver, mock_get_nodes, mock_get_rels, mock_verify_sample):
-        # Mock the return values of the validation functions
-        mock_get_nodes.return_value = {"Concept:Standard": 100}
-        mock_get_rels.return_value = {"IS_A": 200}
-        mock_verify_sample.return_value = {
-            "name": "Test Concept",
-            "labels": ["Concept"],
-            "synonym_count": 2,
-            "relationships_summary": {},
-            "ancestors_summary": {"count": 0, "sample_ancestors": []}
+    @patch('omop2neo4j_lpg.validation.run_validation')
+    def test_validate_command(self, mock_run_validation):
+        # Mock the return value of the main validation orchestrator
+        mock_run_validation.return_value = {
+            "node_counts_by_label_combination": {
+                "Concept:Standard": 100,
+                "Domain": 5
+            },
+            "sample_concept_verification": {
+                "name": "Test Concept"
+            }
         }
 
-        result = self.runner.invoke(cli, ['validate', '--concept-id', '123'])
+        # Invoke the command without the --concept-id option
+        result = self.runner.invoke(cli, ['validate'])
+
+        # Check that the command executed successfully
         self.assertEqual(result.exit_code, 0)
-        mock_get_driver.assert_called_once()
-        mock_get_nodes.assert_called_once()
-        mock_get_rels.assert_called_once()
-        mock_verify_sample.assert_called_once_with(mock_get_driver.return_value, concept_id=123)
-        self.assertIn("Concept:Standard: 100", result.output)
-        self.assertIn("IS_A: 200", result.output)
-        self.assertIn("Test Concept", result.output)
+
+        # Check that our mock was called
+        mock_run_validation.assert_called_once()
+
+        # Check that the output contains key parts of the JSON report
+        self.assertIn('"Concept:Standard": 100', result.output)
+        self.assertIn('"Domain": 5', result.output)
+        self.assertIn('"name": "Test Concept"', result.output)
 
 if __name__ == '__main__':
     unittest.main()
