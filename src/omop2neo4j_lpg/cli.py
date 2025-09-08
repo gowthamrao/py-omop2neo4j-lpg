@@ -58,13 +58,10 @@ def load_csv(batch_size):
     This is a full reload: it clears the DB, creates schema, and loads data.
     """
     logger.info("CLI: Starting LOAD CSV process...")
-    # Note: The current `run_load_csv` doesn't support overriding batch_size.
-    # This is a placeholder for future enhancement. If batch_size is passed,
-    # we could update settings, but that's complex. For now, we ignore it.
-    if batch_size:
-        logger.warning(f"CLI: --batch-size option is not yet implemented. Using value from settings.")
     try:
-        loading.run_load_csv()
+        # Pass the batch_size from the CLI option to the loading function.
+        # If batch_size is None, the loading function will use the default from settings.
+        loading.run_load_csv(batch_size=batch_size)
         logger.info("CLI: LOAD CSV process completed successfully.")
     except Exception as e:
         logger.error(f"CLI: An error occurred during the LOAD CSV process: {e}")

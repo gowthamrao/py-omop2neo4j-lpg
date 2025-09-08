@@ -127,42 +127,47 @@ def prepare_for_bulk_import(chunk_size: int, import_dir: str):
         is_first_chunk = False
     logger.info("Ancestor relationship processing complete.")
 
-    # --- Generate Header Files and Final Command ---
-    logger.info("Generating header files and neo4j-admin command...")
-    node_files = {
-        'domain_nodes': 'nodes_domain_header.csv',
-        'vocabulary_nodes': 'nodes_vocabulary_header.csv',
-        'concept_nodes': 'nodes_concept_header.csv'
-    }
-    rel_files = {
-        'in_domain_rels': 'rels_in_domain_header.csv',
-        'from_vocab_rels': 'rels_from_vocabulary_header.csv',
-        'semantic_rels': 'rels_semantic_header.csv',
-        'ancestor_rels': 'rels_ancestor_header.csv'
-    }
+    # --- Generate Final Command ---
+    logger.info("Generating neo4j-admin command...")
 
-    command_parts = ["neo4j-admin database import full \\"]
+    # NOTE: The file paths in the generated command are relative to the `import_dir`.
+    # The user must ensure their Docker volume mounts this directory to the container's import path.
+    node_files = [
+        paths['domain_nodes'],
+        paths['vocabulary_nodes'],
+        paths['concept_nodes']
+    ]
+    rel_files = [
+        paths['in_domain_rels'],
+        paths['from_vocab_rels'],
+        paths['semantic_rels'],
+        paths['ancestor_rels']
+    ]
 
-    for key, header_name in node_files.items():
-        df_header = pd.read_csv(paths[key], nrows=0)
-        header_path = os.path.join(import_dir, header_name)
-        data_path = os.path.join(import_dir, os.path.basename(paths[key]))
-        df_header.to_csv(header_path, index=False)
-        command_parts.append(f"  --nodes='{header_path}' \\")
-        command_parts.append(f"  --nodes='{data_path}' \\")
+    # Base command with common options
+    command_parts = [
+        "neo4j-admin database import full \\",
+        "  --delimiter=',' \\",
+        "  --array-delimiter='|' \\",
+        "  --multiline-fields=true \\"
+    ]
 
-    for key, header_name in rel_files.items():
-        df_header = pd.read_csv(paths[key], nrows=0)
-        header_path = os.path.join(import_dir, header_name)
-        data_path = os.path.join(import_dir, os.path.basename(paths[key]))
-        df_header.to_csv(header_path, index=False)
-        command_parts.append(f"  --relationships='{header_path}' \\")
-        command_parts.append(f"  --relationships='{data_path}' \\")
+    # Add node files
+    for path in node_files:
+        # The path in the command should be relative to the neo4j import directory
+        filename = os.path.basename(path)
+        command_parts.append(f"  --nodes='{filename}' \\")
 
-    command_parts.append("  --delimiter=',' --array-delimiter='|' --multiline-fields=true \\")
-    command_parts.append("  neo4j") # Target database name
+    # Add relationship files
+    for path in rel_files:
+        filename = os.path.basename(path)
+        command_parts.append(f"  --relationships='{filename}' \\")
+
+    command_parts.append("  neo4j")  # Target database name
 
     final_command = "\n".join(command_parts)
+    # A bit of cleanup for cleaner presentation
+    final_command = final_command.replace(os.path.sep, '/')
     logger.info(f"Generated neo4j-admin command:\n{final_command}")
 
     return final_command

@@ -67,7 +67,7 @@ def create_constraints_and_indexes(driver: Driver):
 
 # --- Data Loading Orchestrator ---
 
-def run_load_csv():
+def run_load_csv(batch_size: int | None = None):
     """
     Main orchestrator for the LOAD CSV method.
     Connects to Neo4j, clears the DB, sets up schema, and loads all data.
@@ -79,10 +79,11 @@ def run_load_csv():
         clear_database(driver)
         create_constraints_and_indexes(driver)
 
-        logger.info("Starting data loading process...")
-        batch_size = settings.LOAD_CSV_BATCH_SIZE
+        # Determine the batch size to use
+        effective_batch_size = batch_size if batch_size is not None else settings.LOAD_CSV_BATCH_SIZE
+        logger.info(f"Starting data loading process with batch size: {effective_batch_size}")
 
-        queries = get_loading_queries(batch_size)
+        queries = get_loading_queries(effective_batch_size)
         _execute_queries(driver, queries)
 
         logger.info("All data loading tasks completed successfully.")
