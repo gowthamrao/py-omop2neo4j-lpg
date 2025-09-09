@@ -1,10 +1,10 @@
 import unittest
 from unittest.mock import MagicMock, patch
-from src.omop2neo4j_lpg import validation
+from omop2neo4j_lpg import validation
 
 class TestValidation(unittest.TestCase):
 
-    @patch('src.omop2neo4j_lpg.validation.get_driver')
+    @patch('omop2neo4j_lpg.validation.get_driver')
     def test_get_node_counts(self, mock_get_driver):
         # Arrange
         mock_driver = MagicMock()
@@ -31,7 +31,7 @@ class TestValidation(unittest.TestCase):
         self.assertEqual(counts["Domain"], 10)
         self.assertTrue(mock_session.run.called)
 
-    @patch('src.omop2neo4j_lpg.validation.get_driver')
+    @patch('omop2neo4j_lpg.validation.get_driver')
     def test_get_relationship_counts(self, mock_get_driver):
         # Arrange
         mock_driver = MagicMock()
@@ -55,7 +55,7 @@ class TestValidation(unittest.TestCase):
         self.assertEqual(counts["HAS_ANCESTOR"], 50000)
         self.assertTrue(mock_session.run.called)
 
-    @patch('src.omop2neo4j_lpg.validation.get_driver')
+    @patch('omop2neo4j_lpg.validation.get_driver')
     def test_verify_sample_concept_found(self, mock_get_driver):
         # Arrange
         mock_driver = MagicMock()
@@ -88,7 +88,7 @@ class TestValidation(unittest.TestCase):
         self.assertEqual(data['relationships']['IS_A']['count'], 1)
         self.assertEqual(data['relationships']['IS_A']['sample_neighbors'][0], 'ACE Inhibitor')
 
-    @patch('src.omop2neo4j_lpg.validation.get_driver')
+    @patch('omop2neo4j_lpg.validation.get_driver')
     def test_verify_sample_concept_not_found(self, mock_get_driver):
         # Arrange
         mock_driver = MagicMock()
