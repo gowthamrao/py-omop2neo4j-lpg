@@ -24,7 +24,9 @@ def get_sql_queries(schema: str) -> dict[str, str]:
                 LEFT JOIN
                     {schema}.concept_synonym cs ON c.concept_id = cs.concept_id
                 GROUP BY
-                    c.concept_id
+                    c.concept_id, c.concept_name, c.domain_id, c.vocabulary_id,
+                    c.concept_class_id, c.standard_concept, c.concept_code,
+                    c.valid_start_date, c.valid_end_date, c.invalid_reason
             ) TO STDOUT WITH CSV HEADER FORCE QUOTE *;
         """,
         "domain.csv": f"COPY (SELECT * FROM {schema}.domain) TO STDOUT WITH CSV HEADER FORCE QUOTE *;",

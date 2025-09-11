@@ -163,12 +163,9 @@ def get_loading_queries(batch_size: int) -> list[str]:
 
         WITH c, row
         // Add :Standard label conditionally for optimized queries
-        CALL apoc.do.when(
-            row.standard_concept = 'S',
-            'SET c:Standard RETURN c',
-            '',
-            {{c:c}}
-        ) YIELD value
+        FOREACH (x IN CASE WHEN row.standard_concept = 'S' THEN [1] ELSE [] END |
+            SET c:Standard
+        )
         WITH c, row
         MATCH (d:Domain {{domain_id: row.domain_id}})
         CREATE (c)-[:IN_DOMAIN]->(d)
@@ -179,29 +176,26 @@ def get_loading_queries(batch_size: int) -> list[str]:
     """
 
     load_relationships = f"""
-    CALL {{
-        LOAD CSV WITH HEADERS FROM 'file:///concept_relationship.csv' AS row
-        MATCH (c1:Concept {{concept_id: toInteger(row.concept_id_1)}})
-        MATCH (c2:Concept {{concept_id: toInteger(row.concept_id_2)}})
+    LOAD CSV WITH HEADERS FROM 'file:///concept_relationship.csv' AS row
+    MATCH (c1:Concept {{concept_id: toInteger(row.concept_id_1)}})
+    MATCH (c2:Concept {{concept_id: toInteger(row.concept_id_2)}})
         WITH c1, c2, row, toupper(apoc.text.replace(row.relationship_id, '[^A-Za-z0-9_]+', '_')) AS relType
-        CALL apoc.create.relationship(c1, relType, {{
-            valid_start: date(row.valid_start_date),
-            valid_end: date(row.valid_end_date),
-            invalid_reason: row.invalid_reason
-        }}, c2) YIELD rel
-        RETURN count(rel)
-    }} IN TRANSACTIONS OF {batch_size} ROWS;
+    CALL apoc.create.relationship(c1, relType, {{
+        valid_start: date(row.valid_start_date),
+        valid_end: date(row.valid_end_date),
+        invalid_reason: row.invalid_reason
+    }}, c2) YIELD rel
+    RETURN count(rel) AS count
     """
 
     load_ancestors = f"""
-    CALL {{
-        LOAD CSV WITH HEADERS FROM 'file:///concept_ancestor.csv' AS row
-        MATCH (d:Concept {{concept_id: toInteger(row.descendant_concept_id)}})
-        MATCH (a:Concept {{concept_id: toInteger(row.ancestor_concept_id)}})
-        CREATE (d)-[r:HAS_ANCESTOR]->(a)
-        SET r.min_levels = toInteger(row.min_levels_of_separation),
-            r.max_levels = toInteger(row.max_levels_of_separation)
-    }} IN TRANSACTIONS OF {batch_size} ROWS;
+    LOAD CSV WITH HEADERS FROM 'file:///concept_ancestor.csv' AS row
+    MATCH (d:Concept {{concept_id: toInteger(row.descendant_concept_id)}})
+    MATCH (a:Concept {{concept_id: toInteger(row.ancestor_concept_id)}})
+    CREATE (d)-[r:HAS_ANCESTOR]->(a)
+    SET r.min_levels = toInteger(row.min_levels_of_separation),
+        r.max_levels = toInteger(row.max_levels_of_separation)
+    RETURN count(r) AS count
     """
 
     return [
