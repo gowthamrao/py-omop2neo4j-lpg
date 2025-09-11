@@ -24,9 +24,7 @@ def get_sql_queries(schema: str) -> dict[str, str]:
                 LEFT JOIN
                     {schema}.concept_synonym cs ON c.concept_id = cs.concept_id
                 GROUP BY
-                    c.concept_id, c.concept_name, c.domain_id, c.vocabulary_id,
-                    c.concept_class_id, c.standard_concept, c.concept_code,
-                    c.valid_start_date, c.valid_end_date, c.invalid_reason
+                    c.concept_id
             ) TO STDOUT WITH CSV HEADER FORCE QUOTE *;
         """,
         "domain.csv": f"COPY (SELECT * FROM {schema}.domain) TO STDOUT WITH CSV HEADER FORCE QUOTE *;",
@@ -60,8 +58,7 @@ def export_tables_to_csv():
     export_dir = settings.EXPORT_DIR
     schema = settings.OMOP_SCHEMA
 
-    # Ensure the export directory exists
-    os.makedirs(export_dir, exist_ok=True)
+    # The export directory is created by the logger setup in config.py
     logger.info(f"Export directory: {os.path.abspath(export_dir)}")
 
     queries = get_sql_queries(schema)

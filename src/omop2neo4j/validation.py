@@ -16,7 +16,7 @@ def get_node_counts(driver: Driver) -> dict[str, int]:
     query = """
     MATCH (n)
     WITH labels(n) AS label_combination
-    RETURN label_combination, count(*) AS count
+    RETURN label_combination, count(n) AS count
     ORDER BY count DESC
     """
     with driver.session() as session:
