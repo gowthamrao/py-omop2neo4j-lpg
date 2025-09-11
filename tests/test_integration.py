@@ -1,10 +1,6 @@
 import os
 import pytest
 from click.testing import CliRunner
-from dotenv import load_dotenv
-
-# Load test environment variables before other imports
-load_dotenv(dotenv_path=".env.test")
 
 from omop2neo4j.cli import cli
 from omop2neo4j.config import settings
