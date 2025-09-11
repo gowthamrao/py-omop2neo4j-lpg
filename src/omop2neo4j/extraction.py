@@ -60,7 +60,8 @@ def export_tables_to_csv():
     export_dir = settings.EXPORT_DIR
     schema = settings.OMOP_SCHEMA
 
-    # The export directory is created by the logger setup in config.py
+    # Ensure the export directory exists
+    os.makedirs(export_dir, exist_ok=True)
     logger.info(f"Export directory: {os.path.abspath(export_dir)}")
 
     queries = get_sql_queries(schema)

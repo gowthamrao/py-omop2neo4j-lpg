@@ -188,6 +188,7 @@ def get_loading_queries(batch_size: int) -> list[str]:
         }}, c2) YIELD rel
         RETURN count(rel) AS count
     }} IN TRANSACTIONS OF {batch_size} ROWS
+    RETURN "relationships loaded"
     """
 
     load_ancestors = f"""
@@ -198,8 +199,8 @@ def get_loading_queries(batch_size: int) -> list[str]:
         CREATE (d)-[r:HAS_ANCESTOR]->(a)
         SET r.min_levels = toInteger(row.min_levels_of_separation),
             r.max_levels = toInteger(row.max_levels_of_separation)
-        RETURN count(r) AS count
     }} IN TRANSACTIONS OF {batch_size} ROWS
+    RETURN "ancestors loaded"
     """
 
     return [
