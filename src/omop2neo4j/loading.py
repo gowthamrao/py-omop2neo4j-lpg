@@ -17,7 +17,7 @@ def get_driver() -> Driver:
 # --- Helper for running queries ---
 
 
-def _execute_queries(driver: Driver, queries: list[str]):
+def _execute_queries(driver: Driver, queries: list[str], ignore_errors: bool = False):
     """Helper function to execute a list of Cypher queries."""
     with driver.session() as session:
         for query in queries:
@@ -27,7 +27,8 @@ def _execute_queries(driver: Driver, queries: list[str]):
             except Exception as e:
                 logger.error(f"Failed to execute query: {query[:120].strip()}")
                 logger.error(e)
-                raise
+                if not ignore_errors:
+                    raise
 
 
 # --- Database Cleanup ---
@@ -47,10 +48,10 @@ def clear_database(driver: Driver):
 
     if drop_constraints:
         logger.info("Dropping existing constraints...")
-        _execute_queries(driver, drop_constraints)
+        _execute_queries(driver, drop_constraints, ignore_errors=True)
     if drop_indexes:
         logger.info("Dropping existing indexes...")
-        _execute_queries(driver, drop_indexes)
+        _execute_queries(driver, drop_indexes, ignore_errors=True)
 
     logger.info("Deleting all nodes and relationships...")
     _execute_queries(driver, ["MATCH (n) DETACH DELETE n"])
@@ -163,12 +164,9 @@ def get_loading_queries(batch_size: int) -> list[str]:
 
         WITH c, row
         // Add :Standard label conditionally for optimized queries
-        CALL apoc.do.when(
-            row.standard_concept = 'S',
-            'SET c:Standard RETURN c',
-            '',
-            {{c:c}}
-        ) YIELD value
+        FOREACH (x IN CASE WHEN row.standard_concept = 'S' THEN [1] ELSE [] END |
+            SET c:Standard
+        )
         WITH c, row
         MATCH (d:Domain {{domain_id: row.domain_id}})
         CREATE (c)-[:IN_DOMAIN]->(d)
@@ -189,8 +187,9 @@ def get_loading_queries(batch_size: int) -> list[str]:
             valid_end: date(row.valid_end_date),
             invalid_reason: row.invalid_reason
         }}, c2) YIELD rel
-        RETURN count(rel)
-    }} IN TRANSACTIONS OF {batch_size} ROWS;
+        RETURN count(rel) AS count
+    }} IN TRANSACTIONS OF {batch_size} ROWS
+    RETURN "relationships loaded"
     """
 
     load_ancestors = f"""
@@ -201,7 +200,8 @@ def get_loading_queries(batch_size: int) -> list[str]:
         CREATE (d)-[r:HAS_ANCESTOR]->(a)
         SET r.min_levels = toInteger(row.min_levels_of_separation),
             r.max_levels = toInteger(row.max_levels_of_separation)
-    }} IN TRANSACTIONS OF {batch_size} ROWS;
+    }} IN TRANSACTIONS OF {batch_size} ROWS
+    RETURN "ancestors loaded"
     """
 
     return [
