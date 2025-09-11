@@ -58,11 +58,10 @@ def test_get_loading_queries(batch_size):
     )
     # Check for conditional standard label
     assert (
-            "FOREACH (x IN CASE WHEN row.standard_concept = 'S' THEN [1] ELSE [] END |"
-            in concept_query
+        "CALL apoc.do.when(\n            row.standard_concept = 'S'," in concept_query
     )
     # Check for batching
-    assert f"IN TRANSACTIONS OF {batch_size} ROWS" in concept_query
+    assert f"}} IN TRANSACTIONS OF {batch_size} ROWS;" in concept_query
     # Check for date conversion and synonym splitting
     assert "valid_start_date: date(row.valid_start_date)" in concept_query
     assert "split(row.synonyms, '|')" in concept_query
@@ -79,7 +78,7 @@ def test_get_loading_queries(batch_size):
         in relationship_query
     )
     # Check for batching
-    assert f"IN TRANSACTIONS OF {batch_size} ROWS" in relationship_query
+    assert f"}} IN TRANSACTIONS OF {batch_size} ROWS;" in relationship_query
 
     # --- Test Ancestor Loading Query ---
     ancestor_query = queries[4]
@@ -92,7 +91,7 @@ def test_get_loading_queries(batch_size):
         "SET r.min_levels = toInteger(row.min_levels_of_separation)" in ancestor_query
     )
     # Check for batching
-    assert f"IN TRANSACTIONS OF {batch_size} ROWS" in ancestor_query
+    assert f"}} IN TRANSACTIONS OF {batch_size} ROWS;" in ancestor_query
 
 
 def test_get_loading_queries_uses_correct_batch_size():

@@ -17,7 +17,7 @@ class Settings(BaseSettings):
     POSTGRES_USER: str = "postgres"
     POSTGRES_PASSWORD: str  # No default value for secrets
     POSTGRES_DB: str = "ohdsi"
-    OMOP_SCHEMA: str
+    OMOP_SCHEMA: str = "omop_cdm"
 
     # Neo4j Connection Settings
     NEO4J_URI: str = "bolt://localhost:7687"
@@ -31,24 +31,11 @@ class Settings(BaseSettings):
     TRANSFORMATION_CHUNK_SIZE: int = 100000
 
     model_config = SettingsConfigDict(
-        env_file=os.environ.get("ENV_FILE", ".env"),
-        env_file_encoding="utf-8",
-        extra="ignore",
+        env_file=".env", env_file_encoding="utf-8", extra="ignore"
     )
 
 
-_settings = None
-
-
-def get_settings() -> Settings:
-    """Returns a cached settings object."""
-    global _settings
-    if _settings is None:
-        _settings = Settings()
-    return _settings
-
-
-settings = get_settings()
+settings = Settings()
 
 # --- Logging ---
 # Create export directory if it doesn't exist to store logs

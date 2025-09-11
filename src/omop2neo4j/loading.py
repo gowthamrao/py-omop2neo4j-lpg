@@ -163,9 +163,12 @@ def get_loading_queries(batch_size: int) -> list[str]:
 
         WITH c, row
         // Add :Standard label conditionally for optimized queries
-        FOREACH (x IN CASE WHEN row.standard_concept = 'S' THEN [1] ELSE [] END |
-            SET c:Standard
-        )
+        CALL apoc.do.when(
+            row.standard_concept = 'S',
+            'SET c:Standard RETURN c',
+            '',
+            {{c:c}}
+        ) YIELD value
         WITH c, row
         MATCH (d:Domain {{domain_id: row.domain_id}})
         CREATE (c)-[:IN_DOMAIN]->(d)
@@ -186,9 +189,8 @@ def get_loading_queries(batch_size: int) -> list[str]:
             valid_end: date(row.valid_end_date),
             invalid_reason: row.invalid_reason
         }}, c2) YIELD rel
-        RETURN count(rel) AS count
-    }} IN TRANSACTIONS OF {batch_size} ROWS
-    RETURN "relationships loaded"
+        RETURN count(rel)
+    }} IN TRANSACTIONS OF {batch_size} ROWS;
     """
 
     load_ancestors = f"""
@@ -199,8 +201,7 @@ def get_loading_queries(batch_size: int) -> list[str]:
         CREATE (d)-[r:HAS_ANCESTOR]->(a)
         SET r.min_levels = toInteger(row.min_levels_of_separation),
             r.max_levels = toInteger(row.max_levels_of_separation)
-    }} IN TRANSACTIONS OF {batch_size} ROWS
-    RETURN "ancestors loaded"
+    }} IN TRANSACTIONS OF {batch_size} ROWS;
     """
 
     return [
