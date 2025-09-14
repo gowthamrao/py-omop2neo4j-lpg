@@ -1,16 +1,12 @@
-[build-system]
-requires = ["setuptools>=61.0"]
-build-backend = "setuptools.build_meta"
-
-[project]
+[tool.poetry]
 name = "py_omop2neo4j_lpg"
 version = "0.2.0"
-authors = [
-    { name="Gowtham Rao", email="rao@ohdsi.org" }
-]
 description = "A Python package to orchestrate the migration of OMOP vocabulary tables from PostgreSQL to a Labeled Property Graph (LPG) in Neo4j."
+authors = ["Gowtham Rao <rao@ohdsi.org>"]
 readme = "README.md"
-requires-python = ">=3.8"
+license = "MIT"
+homepage = "https://github.com/ohdsi/py_omop2neo4j_lpg"
+repository = "https://github.com/ohdsi/py_omop2neo4j_lpg"
 classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: MIT License",
@@ -19,31 +15,28 @@ classifiers = [
     "Intended Audience :: Science/Research",
     "Topic :: Database",
 ]
-dependencies = [
-    "neo4j",
-    "pandas",
-    "numpy",
-    "click",
-    "pydantic-settings",
-    "python-dotenv"
-]
+packages = [{include = "omop2neo4j_lpg", from = "src"}]
 
-[project.optional-dependencies]
-test = [
-    "pytest",
-    "psycopg2-binary",
-    "pytest-docker"
-]
+[tool.poetry.dependencies]
+python = ">=3.8"
+neo4j = "*"
+pandas = "*"
+numpy = "*"
+click = "*"
+pydantic-settings = "*"
+python-dotenv = "*"
 
-[project.scripts]
+[tool.poetry.group.test.dependencies]
+pytest = "*"
+psycopg2-binary = "*"
+pytest-docker = "*"
+
+[tool.poetry.scripts]
 py_omop2neo4j_lpg = "omop2neo4j_lpg.cli:cli"
 
-[project.urls]
-"Homepage" = "https://github.com/ohdsi/py_omop2neo4j_lpg"
-"Bug Tracker" = "https://github.com/ohdsi/py_omop2neo4j_lpg/issues"
-
-[tool.setuptools.packages.find]
-where = ["src"]
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
 
 [tool.pytest.ini_options]
 env_files = [
