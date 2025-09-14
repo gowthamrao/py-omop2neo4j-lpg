@@ -3,7 +3,7 @@ requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "py-omop2neo4j-lpg"
+name = "py_omop2neo4j_lpg"
 version = "0.2.0"
 authors = [
     { name="Gowtham Rao", email="rao@ohdsi.org" }
@@ -36,11 +36,11 @@ test = [
 ]
 
 [project.scripts]
-py-omop2neo4j-lpg = "omop2neo4j_lpg.cli:cli"
+py_omop2neo4j_lpg = "omop2neo4j_lpg.cli:cli"
 
 [project.urls]
-"Homepage" = "https://github.com/ohdsi/py-omop2neo4j-lpg"
-"Bug Tracker" = "https://github.com/ohdsi/py-omop2neo4j-lpg/issues"
+"Homepage" = "https://github.com/ohdsi/py_omop2neo4j_lpg"
+"Bug Tracker" = "https://github.com/ohdsi/py_omop2neo4j_lpg/issues"
 
 [tool.setuptools.packages.find]
 where = ["src"]
