@@ -96,8 +96,5 @@ def test_etl_idempotency_and_clear(postgres_service, neo4j_service, docker_servi
 
 
     finally:
-        # Clean up
-        if os.path.exists(settings.EXPORT_DIR):
-            for f in os.listdir(settings.EXPORT_DIR):
-                os.remove(os.path.join(settings.EXPORT_DIR, f))
-            os.rmdir(settings.EXPORT_DIR)
+        # Clean up is handled by the clean_export_dir fixture
+        pass
