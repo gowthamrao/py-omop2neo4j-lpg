@@ -84,11 +84,6 @@ def test_full_etl_pipeline(postgres_service, neo4j_service, docker_services):
         logs = docker_services._docker_compose.execute("logs postgres-test")
         print(logs)
 
-        # Clean up
-        for f in os.listdir(settings.EXPORT_DIR):
-            os.remove(os.path.join(settings.EXPORT_DIR, f))
-        os.rmdir(settings.EXPORT_DIR)
-
 
 import tempfile
 import shutil
@@ -124,7 +119,3 @@ def test_prepare_bulk_workflow(postgres_service, neo4j_service, docker_services)
     finally:
         # Clean up created files
         shutil.rmtree(bulk_import_dir)
-        if os.path.exists(settings.EXPORT_DIR):
-            for f in os.listdir(settings.EXPORT_DIR):
-                os.remove(os.path.join(settings.EXPORT_DIR, f))
-            os.rmdir(settings.EXPORT_DIR)

@@ -27,7 +27,7 @@ services:
       - "7475:7474"
       - "7688:7687"
     volumes:
-      - /app/export:/import
+      - ./export_test:/import
     healthcheck:
       test: ["CMD-SHELL", "wget -O /dev/null --server-response --timeout=2 http://localhost:7474 2>&1 | awk '/^  HTTP/{print $$2}' | grep -q 200"]
       interval: 5s
