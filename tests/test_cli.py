@@ -1,7 +1,7 @@
 import unittest
 from unittest.mock import patch
 from click.testing import CliRunner
-from omop2neo4j.cli import cli
+from omop2neo4j_lpg.cli import cli
 
 
 class TestCli(unittest.TestCase):
@@ -9,21 +9,21 @@ class TestCli(unittest.TestCase):
     def setUp(self):
         self.runner = CliRunner()
 
-    @patch("omop2neo4j.extraction.export_tables_to_csv")
+    @patch("omop2neo4j_lpg.extraction.export_tables_to_csv")
     def test_extract_command(self, mock_export):
         result = self.runner.invoke(cli, ["extract"])
         self.assertEqual(result.exit_code, 0)
         mock_export.assert_called_once()
 
-    @patch("omop2neo4j.loading.clear_database")
-    @patch("omop2neo4j.loading.get_driver")
+    @patch("omop2neo4j_lpg.loading.clear_database")
+    @patch("omop2neo4j_lpg.loading.get_driver")
     def test_clear_db_command(self, mock_get_driver, mock_clear):
         result = self.runner.invoke(cli, ["clear-db"])
         self.assertEqual(result.exit_code, 0)
         mock_get_driver.assert_called_once()
         mock_clear.assert_called_once()
 
-    @patch("omop2neo4j.loading.run_load_csv")
+    @patch("omop2neo4j_lpg.loading.run_load_csv")
     def test_load_csv_command(self, mock_run_load):
         # Test without option
         result = self.runner.invoke(cli, ["load-csv"])
@@ -35,7 +35,7 @@ class TestCli(unittest.TestCase):
         self.assertEqual(result.exit_code, 0)
         mock_run_load.assert_called_with(batch_size=5000)
 
-    @patch("omop2neo4j.transformation.prepare_for_bulk_import")
+    @patch("omop2neo4j_lpg.transformation.prepare_for_bulk_import")
     def test_prepare_bulk_command(self, mock_prepare_bulk):
         mock_prepare_bulk.return_value = "neo4j-admin command"
         result = self.runner.invoke(cli, ["prepare-bulk", "--chunk-size", "50000"])
@@ -43,15 +43,15 @@ class TestCli(unittest.TestCase):
         self.assertIn("neo4j-admin command", result.output)
         mock_prepare_bulk.assert_called_with(chunk_size=50000, import_dir="bulk_import")
 
-    @patch("omop2neo4j.loading.create_constraints_and_indexes")
-    @patch("omop2neo4j.loading.get_driver")
+    @patch("omop2neo4j_lpg.loading.create_constraints_and_indexes")
+    @patch("omop2neo4j_lpg.loading.get_driver")
     def test_create_indexes_command(self, mock_get_driver, mock_create_indexes):
         result = self.runner.invoke(cli, ["create-indexes"])
         self.assertEqual(result.exit_code, 0)
         mock_get_driver.assert_called_once()
         mock_create_indexes.assert_called_once()
 
-    @patch("omop2neo4j.validation.run_validation")
+    @patch("omop2neo4j_lpg.validation.run_validation")
     def test_validate_command(self, mock_run_validation):
         # Mock the return value of the main validation orchestrator
         mock_run_validation.return_value = {

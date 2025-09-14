@@ -2,8 +2,8 @@ import unittest
 import os
 import shutil
 import pandas as pd
-from omop2neo4j.transformation import prepare_for_bulk_import
-from omop2neo4j.config import settings
+from omop2neo4j_lpg.transformation import prepare_for_bulk_import
+from omop2neo4j_lpg.config import settings
 
 
 class TestTransformation(unittest.TestCase):
