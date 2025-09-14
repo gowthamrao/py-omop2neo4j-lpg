@@ -2,7 +2,6 @@ version: '3.8'
 services:
   postgres-test:
     image: postgres:13
-    container_name: postgres-test
     environment:
       - POSTGRES_USER=testuser
       - POSTGRES_PASSWORD=testpass
@@ -19,7 +18,6 @@ services:
 
   neo4j-test:
     image: neo4j:latest
-    container_name: neo4j-test
     environment:
       - NEO4J_AUTH=neo4j/StrongPass123
       - NEO4J_apoc_import_file_enabled=true
@@ -29,7 +27,7 @@ services:
       - "7475:7474"
       - "7688:7687"
     volumes:
-      - /app/export_test:/import
+      - /app/export:/import
     healthcheck:
       test: ["CMD-SHELL", "wget -O /dev/null --server-response --timeout=2 http://localhost:7474 2>&1 | awk '/^  HTTP/{print $$2}' | grep -q 200"]
       interval: 5s
