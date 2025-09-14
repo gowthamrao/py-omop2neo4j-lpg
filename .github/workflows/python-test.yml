@@ -26,10 +26,9 @@ jobs:
           --health-timeout 5s
           --health-retries 5
       neo4j:
-        image: neo4j:latest
+        image: neo4j:4.4.11-community
         env:
           NEO4J_AUTH: neo4j/StrongPass123
-          NEO4J_ACCEPT_LICENSE_AGREEMENT: "yes"
           NEO4J_apoc_import_file_enabled: "true"
           NEO4J_apoc_import_file_use__neo4j__config: "true"
           NEO4JLABS_PLUGINS: '["apoc"]'
@@ -37,7 +36,7 @@ jobs:
           - "7475:7474"
           - "7688:7687"
         options: >-
-          --health-cmd "wget -O /dev/null --server-response --timeout=2 http://localhost:7474 2>&1 | awk '/^  HTTP/{print $$2}' | grep -q 200"
+          --health-cmd "wget -O /dev/null --server-response --timeout=2 http://localhost:7475 2>&1 | awk '/^  HTTP/{print $2}' | grep -q 200"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
