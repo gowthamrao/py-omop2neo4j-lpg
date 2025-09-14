@@ -1,5 +1,5 @@
 import pytest
-from omop2neo4j import extraction, loading
+from omop2neo4j_lpg import extraction, loading
 
 # --- Tests for extraction.py ---
 

@@ -107,7 +107,7 @@ def prepare_bulk(chunk_size, import_dir):
             "\n3. After the import is complete, start the Neo4j service.", fg="yellow"
         )
         click.secho(
-            "4. Run `omop2neo4j create-indexes` to build the database schema.",
+            "4. Run `py_omop2neo4j_lpg create-indexes` to build the database schema.",
             fg="yellow",
         )
 

@@ -26,7 +26,7 @@ class Settings(BaseSettings):
 
     # ETL Configuration
     EXPORT_DIR: str = "export"
-    LOG_FILE: str = "omop2neo4j.log"
+    LOG_FILE: str = "py-omop2neo4j-lpg.log"
     LOAD_CSV_BATCH_SIZE: int = 10000
     TRANSFORMATION_CHUNK_SIZE: int = 100000
 
@@ -84,5 +84,5 @@ def get_logger(name: str) -> logging.Logger:
 
 
 # A default logger for general use
-logger = get_logger("omop2neo4j")
+logger = get_logger("py_omop2neo4j_lpg")
 logger.info("Configuration loaded and logger initialized.")
