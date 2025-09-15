@@ -60,7 +60,7 @@ jobs:
 
       - name: Initialize DB
         run: |
-          sleep 10
+          sleep 30
           PGPASSWORD=testpass psql -h localhost -p 5433 -U testuser -d testdb -f tests/sample_data/init.sql
 
       - name: Run tests
