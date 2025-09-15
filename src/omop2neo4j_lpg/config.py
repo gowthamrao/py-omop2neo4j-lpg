@@ -52,8 +52,13 @@ settings = get_settings()
 
 # --- Logging ---
 # Create export directory if it doesn't exist to store logs
-os.makedirs(settings.EXPORT_DIR, exist_ok=True)
-log_file_path = os.path.join(settings.EXPORT_DIR, settings.LOG_FILE)
+if "pytest" in sys.modules:
+    log_dir = "/tmp"
+else:
+    log_dir = settings.EXPORT_DIR
+    os.makedirs(log_dir, exist_ok=True)
+
+log_file_path = os.path.join(log_dir, settings.LOG_FILE)
 
 
 def get_logger(name: str) -> logging.Logger:
