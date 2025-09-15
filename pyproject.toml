@@ -15,7 +15,7 @@ classifiers = [
     "Intended Audience :: Science/Research",
     "Topic :: Database",
 ]
-packages = [{include = "omop2neo4j_lpg", from = "src"}]
+packages = [{include = "py_omop2neo4j_lpg", from = "src"}]
 
 [tool.poetry.dependencies]
 python = ">=3.8"
@@ -33,7 +33,7 @@ pytest-docker = "*"
 pytest-dotenv = "*"
 
 [tool.poetry.scripts]
-py_omop2neo4j_lpg = "omop2neo4j_lpg.cli:cli"
+py_omop2neo4j_lpg = "py_omop2neo4j_lpg.cli:cli"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

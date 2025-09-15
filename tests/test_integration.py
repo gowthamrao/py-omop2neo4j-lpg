@@ -2,8 +2,8 @@ import os
 import pytest
 from click.testing import CliRunner
 
-from omop2neo4j_lpg.cli import cli
-from omop2neo4j_lpg.config import settings
+from py_omop2neo4j_lpg.cli import cli
+from py_omop2neo4j_lpg.config import settings
 
 
 @pytest.fixture(scope="session")

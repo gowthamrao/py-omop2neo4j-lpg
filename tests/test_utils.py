@@ -1,5 +1,5 @@
 import unittest
-from omop2neo4j_lpg.utils import standardize_label, standardize_reltype
+from py_omop2neo4j_lpg.utils import standardize_label, standardize_reltype
 
 
 class TestUtils(unittest.TestCase):

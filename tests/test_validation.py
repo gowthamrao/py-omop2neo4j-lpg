@@ -1,6 +1,6 @@
 import unittest
 from unittest.mock import MagicMock
-from omop2neo4j_lpg import validation
+from py_omop2neo4j_lpg import validation
 
 
 class TestValidation(unittest.TestCase):
