@@ -25,8 +25,10 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
+        volumes:
+          - ./tests/sample_data/init.sql:/docker-entrypoint-initdb.d/init.sql
       neo4j:
-        image: neo4j:4.4.11-community
+        image: neo4j:latest
         env:
           NEO4J_AUTH: neo4j/StrongPass123
           NEO4J_ACCEPT_LICENSE_AGREEMENT: "yes"
@@ -40,7 +42,7 @@ jobs:
           --health-cmd "wget -O /dev/null --server-response --timeout=2 http://localhost:7474 2>&1 | awk '/^  HTTP/{print $2}' | grep -q 200"
           --health-interval 10s
           --health-timeout 5s
-          --health-retries 5
+          --health-retries 10
 
     steps:
       - name: Checkout code
@@ -57,11 +59,6 @@ jobs:
           pip install poetry
           poetry install
           sudo apt-get update && sudo apt-get install -y postgresql-client
-
-      - name: Initialize DB
-        run: |
-          sleep 30
-          PGPASSWORD=testpass psql -h localhost -p 5433 -U testuser -d testdb -f tests/sample_data/init.sql
 
       - name: Run tests
         run: |
