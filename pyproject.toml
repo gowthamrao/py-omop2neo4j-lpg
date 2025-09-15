@@ -31,6 +31,7 @@ pytest = "*"
 psycopg2-binary = "*"
 pytest-docker = "*"
 pytest-dotenv = "*"
+pytest-cov = "*"
 
 [tool.poetry.scripts]
 py_omop2neo4j_lpg = "py_omop2neo4j_lpg.cli:cli"
