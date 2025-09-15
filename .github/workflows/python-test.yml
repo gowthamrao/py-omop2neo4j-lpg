@@ -88,6 +88,10 @@ jobs:
           NEO4J_USER: neo4j
           NEO4J_PASSWORD: StrongPass123
 
+      - name: Change ownership of workspace
+        if: always()
+        run: sudo chown -R runner:docker .
+
       - name: Get Postgres logs
         if: always()
         run: docker logs ${{ job.services.postgres.id }}
