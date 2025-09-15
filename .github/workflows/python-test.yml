@@ -20,11 +20,7 @@ jobs:
           POSTGRES_DB: testdb
         ports:
           - 5433:5432
-        options: >-
-          --health-cmd "pg_isready -U testuser -d testdb"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
+        options: --health-cmd "pg_isready -U testuser -d testdb" --health-interval 5s --health-timeout 5s --health-retries 5
         volumes:
           - ./tests/sample_data/init.sql:/docker-entrypoint-initdb.d/init.sql
       neo4j:
@@ -38,11 +34,7 @@ jobs:
         ports:
           - "7475:7474"
           - "7688:7687"
-        options: >-
-          --health-cmd "wget -O /dev/null --server-response --timeout=2 http://localhost:7474 2>&1 | awk '/^  HTTP/{print $2}' | grep -q 200"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 10
+        options: --health-cmd "wget -O /dev/null --server-response --timeout=2 http://localhost:7474 2>&1 | awk '/^  HTTP/{print $2}' | grep -q 200" --health-interval 5s --health-timeout 5s --health-retries 10
 
     steps:
       - name: Checkout code
