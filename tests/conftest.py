@@ -1,7 +1,7 @@
 import os
 import shutil
 import pytest
-from omop2neo4j_lpg.config import settings
+from py_omop2neo4j_lpg.config import settings
 
 @pytest.fixture(scope="session")
 def test_export_dir():
