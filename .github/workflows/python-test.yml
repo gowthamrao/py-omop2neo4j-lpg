@@ -37,7 +37,7 @@ jobs:
           - "7475:7474"
           - "7688:7687"
         options: >-
-          --health-cmd "wget -O /dev/null --server-response --timeout=2 http://localhost:7475 2>&1 | awk '/^  HTTP/{print $2}' | grep -q 200"
+          --health-cmd "wget -O /dev/null --server-response --timeout=2 http://localhost:7474 2>&1 | awk '/^  HTTP/{print $2}' | grep -q 200"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
