@@ -39,10 +39,11 @@ jobs:
         options: --health-cmd "wget -O /dev/null --server-response --timeout=2 http://neo4j:7474 2>&1 | awk '/^  HTTP/{print $2}' | grep -q 200" --health-interval 5s --health-timeout 5s --health-retries 10
 
     steps:
-      - name: Clean workspace and set owner
-        run: sudo chown -R runner:docker .
       - name: Checkout code
         uses: actions/checkout@v3
+
+      - name: Clean workspace and set owner
+        run: sudo chown -R runner:docker .
 
       - name: Set up Python 3.9
         uses: actions/setup-python@v3
