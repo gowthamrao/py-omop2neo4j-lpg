@@ -89,3 +89,7 @@ jobs:
       - name: Get Postgres logs
         if: always()
         run: docker logs ${{ job.services.postgres.id }}
+
+      - name: Final cleanup
+        if: always()
+        run: sudo chown -R runner:docker .
