@@ -45,9 +45,9 @@ def neo4j_service(docker_services):
     deadline = time.time() + 60
     while time.time() < deadline:
         try:
-            driver = GraphDatabase.driver("bolt://localhost:7688", auth=("neo4j", "StrongPass123"))
-            driver.verify_connectivity()
-            driver.close()
+            with GraphDatabase.driver("bolt://localhost:7688", auth=("neo4j", "StrongPass123")) as driver:
+                driver.verify_connectivity()
+            # If we reach here, connection was successful
             break
         except Exception:
             time.sleep(1)
