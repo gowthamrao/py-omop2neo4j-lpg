@@ -65,7 +65,7 @@ def neo4j_service():
     deadline = time.time() + 60
     while time.time() < deadline:
         try:
-            driver = GraphDatabase.driver("bolt://localhost:7688", auth=("neo4j", "StrongPass123"))
+            driver = GraphDatabase.driver("bolt://localhost:7687", auth=("neo4j", "StrongPass123"))
             driver.verify_connectivity()
             driver.close()
             break
