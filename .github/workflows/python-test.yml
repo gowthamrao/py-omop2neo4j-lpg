@@ -36,6 +36,8 @@ jobs:
         ports:
           - "7474:7474"
           - "7687:7687"
+        volumes:
+          - ./export:/import
         options: --health-cmd "wget -O /dev/null --server-response --timeout=2 http://neo4j:7474 2>&1 | awk '/^  HTTP/{print $2}' | grep -q 200" --health-interval 5s --health-timeout 5s --health-retries 10
 
     steps:
