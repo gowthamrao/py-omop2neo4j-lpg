@@ -75,7 +75,12 @@ INSERT INTO vocabulary (vocabulary_id, vocabulary_name, vocabulary_reference, vo
 INSERT INTO concept (concept_id, concept_name, domain_id, vocabulary_id, concept_class_id, standard_concept, concept_code, valid_start_date, valid_end_date, invalid_reason) VALUES
 (1001, 'Aspirin', 'Drug', 'RxNorm', 'Ingredient', 'S', 'A1', '2000-01-01', '2099-12-31', NULL),
 (1002, 'Headache', 'Condition', 'SNOMED', 'Finding', 'S', 'B2', '2000-01-01', '2099-12-31', NULL),
-(1003, 'Pain Killer', 'Drug/Device', 'RxNorm', 'Ingredient', NULL, 'C3', '2000-01-01', '2099-12-31', NULL);
+(1003, 'Pain Killer', 'Drug', 'RxNorm', 'Ingredient', NULL, 'C3', '2000-01-01', '2099-12-31', NULL);
+
+-- Insert sample data into relationship table
+INSERT INTO relationship (relationship_id, relationship_name, is_hierarchical, defines_ancestry, reverse_relationship_id, relationship_concept_id) VALUES
+('treats', 'treats', 'N', 'N', 'is treated by', 4289452),
+('maps to', 'maps to', 'N', 'N', 'is mapped from', 44818752);
 
 -- Note: We are not creating a separate concepts_optimized.csv, so we will use concept table and create synonyms from concept_synonym
 INSERT INTO concept_synonym (concept_id, concept_synonym_name, language_concept_id) VALUES
