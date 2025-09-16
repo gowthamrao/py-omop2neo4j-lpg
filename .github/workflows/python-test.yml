@@ -22,9 +22,6 @@ jobs:
           POSTGRES_DB: testdb
         ports:
           - 5433:5432
-        volumes:
-          - ./tests/sample_data:/docker-entrypoint-initdb.d
-        options: --health-cmd "pg_isready -U testuser -d testdb" --health-interval 5s --health-timeout 5s --health-retries 10
       neo4j:
         image: neo4j:latest
         env:
@@ -41,9 +38,6 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
-
-      - name: Clean workspace and set owner
-        run: sudo chown -R runner:docker .
 
       - name: Set up Python 3.9
         uses: actions/setup-python@v3
@@ -71,6 +65,15 @@ jobs:
           done
           sudo apt-get install -y postgresql-client
 
+      - name: Initialize database
+        run: |
+          until pg_isready -h localhost -p 5433 -U testuser; do
+            echo "Waiting for postgres..."
+            sleep 2
+          done
+          psql -h localhost -p 5433 -U testuser -d testdb -f ./tests/sample_data/init.sql
+        env:
+          PGPASSWORD: testpass
 
       - name: Run tests
         run: |
@@ -89,7 +92,3 @@ jobs:
       - name: Get Postgres logs
         if: always()
         run: docker logs ${{ job.services.postgres.id }}
-
-      - name: Final cleanup
-        if: always()
-        run: sudo chown -R runner:docker .
