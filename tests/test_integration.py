@@ -66,7 +66,7 @@ def test_full_etl_pipeline(postgres_service, neo4j_service, docker_services):
 
         # DEBUG: Check the contents of the /import directory inside the container
         try:
-            ls_output = docker_services.execute("ls -la /import")
+            ls_output = docker_services._docker_compose.execute("exec neo4j-test ls -la /import")
             print(f"DEBUG: ls -la /import\n{ls_output}")
         except Exception as e:
             print(f"DEBUG: Error executing ls -la /import: {e}")
