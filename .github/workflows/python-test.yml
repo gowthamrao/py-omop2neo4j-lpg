@@ -21,6 +21,9 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
+      - name: Create test export directory
+        run: mkdir -p export_test
+
       - name: Set up Python 3.9
         uses: actions/setup-python@v3
         with:
