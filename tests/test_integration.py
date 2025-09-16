@@ -81,8 +81,10 @@ def test_full_etl_pipeline(postgres_service, neo4j_service, docker_services):
 
     finally:
         # Print logs if the test fails
-        logs = docker_services._docker_compose.execute("logs postgres-test")
-        print(logs)
+        pg_logs = docker_services._docker_compose.execute("logs postgres-test")
+        print(f"Postgres logs:\n{pg_logs}")
+        neo4j_logs = docker_services._docker_compose.execute("logs neo4j-test")
+        print(f"Neo4j logs:\n{neo4j_logs}")
 
 
 import tempfile
