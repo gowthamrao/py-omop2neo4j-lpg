@@ -29,7 +29,6 @@ services:
       - "7688:7687"
     volumes:
       - ./export_test:/import
-    command: /bin/bash -c "ls -la /import && /docker-entrypoint.sh neo4j"
     healthcheck:
       test: ["CMD-SHELL", "wget -O /dev/null --server-response --timeout=2 http://localhost:7474 2>&1 | awk '/^  HTTP/{print $2}' | grep -q 200"]
       interval: 5s

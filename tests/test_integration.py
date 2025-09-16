@@ -64,6 +64,13 @@ def test_full_etl_pipeline(postgres_service, neo4j_service, docker_services):
         assert result_extract.exit_code == 0
         assert os.path.exists(os.path.join(settings.EXPORT_DIR, "concepts_optimized.csv"))
 
+        # DEBUG: Check the contents of the /import directory inside the container
+        try:
+            ls_output = docker_services._docker_compose.execute("exec neo4j-test ls -la /import")
+            print(f"DEBUG: ls -la /import\n{ls_output}")
+        except Exception as e:
+            print(f"DEBUG: Error executing ls -la /import: {e}")
+
         # 2. Load CSV
         result_load = runner.invoke(cli, ["load-csv"])
         assert result_load.exit_code == 0
@@ -78,13 +85,6 @@ def test_full_etl_pipeline(postgres_service, neo4j_service, docker_services):
         assert '"TREATS": 1' in result_validate.output
         assert '"MAPS_TO": 1' in result_validate.output
         assert '"HAS_ANCESTOR": 1' in result_validate.output
-
-    finally:
-        # Print logs if the test fails
-        pg_logs = docker_services._docker_compose.execute("logs postgres-test")
-        print(f"Postgres logs:\n{pg_logs}")
-        neo4j_logs = docker_services._docker_compose.execute("logs neo4j-test")
-        print(f"Neo4j logs:\n{neo4j_logs}")
 
 
 import tempfile
