@@ -24,6 +24,7 @@ jobs:
           - 5433:5432
         volumes:
           - ./tests/sample_data/init.sql:/docker-entrypoint-initdb.d/init.sql
+        options: --health-cmd "pg_isready -U testuser -d testdb" --health-interval 5s --health-timeout 5s --health-retries 10
       neo4j:
         image: neo4j:latest
         env:
@@ -69,12 +70,6 @@ jobs:
           done
           sudo apt-get install -y postgresql-client
 
-      - name: Wait for PostgreSQL to be healthy
-        run: |
-          until pg_isready -h localhost -p 5433 -U testuser -d testdb; do
-            echo "Waiting for PostgreSQL..."
-            sleep 1
-          done
 
       - name: Run tests
         run: |
