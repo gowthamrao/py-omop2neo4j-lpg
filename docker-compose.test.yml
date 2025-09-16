@@ -24,10 +24,10 @@ services:
       - NEO4J_apoc_import_file_use__neo4j__config=true
       - NEO4JLABS_PLUGINS=["apoc"]
     ports:
-      - "7474:7474"
-      - "7687:7687"
+      - "7475:7474"
+      - "7688:7687"
     volumes:
-      - ./export:/import
+      - ./export_test:/import
     healthcheck:
       test: ["CMD-SHELL", "wget -O /dev/null --server-response --timeout=2 http://localhost:7474 2>&1 | awk '/^  HTTP/{print $2}' | grep -q 200"]
       interval: 5s
