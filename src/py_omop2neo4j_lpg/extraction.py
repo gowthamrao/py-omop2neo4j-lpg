@@ -85,6 +85,7 @@ def export_tables_to_csv():
                 try:
                     with open(output_path, "w", encoding="utf-8") as f_out:
                         cursor.copy_expert(query, f_out)
+                    os.chmod(output_path, 0o644)
                     logger.info(f"Successfully exported to '{filename}'.")
                 except Exception as e:
                     logger.error(f"Error exporting to '{filename}': {e}")

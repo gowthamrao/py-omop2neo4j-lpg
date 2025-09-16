@@ -48,7 +48,7 @@ def test_get_loading_queries(batch_size):
     # --- Test Concept Loading Query ---
     concept_query = queries[2]
     assert (
-        "LOAD CSV WITH HEADERS FROM 'file:///concepts_optimized.csv' AS row"
+        "LOAD CSV WITH HEADERS FROM 'file:///import/concepts_optimized.csv' AS row"
         in concept_query
     )
     # Check for the robust label standardization logic
@@ -70,7 +70,7 @@ def test_get_loading_queries(batch_size):
     # --- Test Relationship Loading Query ---
     relationship_query = queries[3]
     assert (
-        "LOAD CSV WITH HEADERS FROM 'file:///concept_relationship.csv' AS row"
+        "LOAD CSV WITH HEADERS FROM 'file:///import/concept_relationship.csv' AS row"
         in relationship_query
     )
     # Check for robust reltype standardization
@@ -84,7 +84,7 @@ def test_get_loading_queries(batch_size):
     # --- Test Ancestor Loading Query ---
     ancestor_query = queries[4]
     assert (
-        "LOAD CSV WITH HEADERS FROM 'file:///concept_ancestor.csv' AS row"
+        "LOAD CSV WITH HEADERS FROM 'file:///import/concept_ancestor.csv' AS row"
         in ancestor_query
     )
     assert "CREATE (d)-[r:HAS_ANCESTOR]->(a)" in ancestor_query

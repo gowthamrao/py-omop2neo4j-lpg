@@ -118,7 +118,7 @@ def get_loading_queries(batch_size: int) -> list[str]:
     # The user is responsible for mounting the local `export` directory to `/import` in Docker.
 
     load_domains = """
-    LOAD CSV WITH HEADERS FROM 'file:///domain.csv' AS row
+    LOAD CSV WITH HEADERS FROM 'file:///import/domain.csv' AS row
     CREATE (d:Domain {
         domain_id: row.domain_id,
         name: row.domain_name,
@@ -127,7 +127,7 @@ def get_loading_queries(batch_size: int) -> list[str]:
     """
 
     load_vocabularies = """
-    LOAD CSV WITH HEADERS FROM 'file:///vocabulary.csv' AS row
+    LOAD CSV WITH HEADERS FROM 'file:///import/vocabulary.csv' AS row
     CREATE (v:Vocabulary {
         vocabulary_id: row.vocabulary_id,
         name: row.vocabulary_name,
@@ -139,7 +139,7 @@ def get_loading_queries(batch_size: int) -> list[str]:
 
     load_concepts = f"""
     CALL {{
-        LOAD CSV WITH HEADERS FROM 'file:///concepts_optimized.csv' AS row
+        LOAD CSV WITH HEADERS FROM 'file:///import/concepts_optimized.csv' AS row
         // 1. Create the Concept node with base properties
         CREATE (c:Concept {{
             concept_id: toInteger(row.concept_id),
@@ -178,7 +178,7 @@ def get_loading_queries(batch_size: int) -> list[str]:
 
     load_relationships = f"""
     CALL {{
-        LOAD CSV WITH HEADERS FROM 'file:///concept_relationship.csv' AS row
+        LOAD CSV WITH HEADERS FROM 'file:///import/concept_relationship.csv' AS row
         MATCH (c1:Concept {{concept_id: toInteger(row.concept_id_1)}})
         MATCH (c2:Concept {{concept_id: toInteger(row.concept_id_2)}})
         WITH c1, c2, row, toupper(apoc.text.replace(row.relationship_id, '[^A-Za-z0-9_]+', '_')) AS relType
@@ -194,7 +194,7 @@ def get_loading_queries(batch_size: int) -> list[str]:
 
     load_ancestors = f"""
     CALL {{
-        LOAD CSV WITH HEADERS FROM 'file:///concept_ancestor.csv' AS row
+        LOAD CSV WITH HEADERS FROM 'file:///import/concept_ancestor.csv' AS row
         MATCH (d:Concept {{concept_id: toInteger(row.descendant_concept_id)}})
         MATCH (a:Concept {{concept_id: toInteger(row.ancestor_concept_id)}})
         CREATE (d)-[r:HAS_ANCESTOR]->(a)
