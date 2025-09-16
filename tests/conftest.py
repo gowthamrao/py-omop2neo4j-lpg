@@ -26,3 +26,50 @@ def clean_export_dir(test_export_dir):
 def monkeypatch_settings(monkeypatch, test_export_dir):
     """Monkeypatches the settings for the test environment."""
     monkeypatch.setattr(settings, "EXPORT_DIR", test_export_dir)
+
+
+import psycopg2
+import time
+from neo4j import GraphDatabase
+
+@pytest.fixture(scope="session")
+def docker_compose_file(pytestconfig):
+    return os.path.join(
+        str(pytestconfig.rootdir), "docker-compose.test.yml"
+    )
+
+@pytest.fixture(scope="session")
+def postgres_service():
+    # Healthcheck for postgres
+    deadline = time.time() + 60
+    while time.time() < deadline:
+        try:
+            conn = psycopg2.connect(
+                host="localhost",
+                port=5433,
+                user="testuser",
+                password="testpass",
+                dbname="testdb"
+            )
+            conn.close()
+            break
+        except psycopg2.OperationalError:
+            time.sleep(1)
+    else:
+        pytest.fail("PostgreSQL did not become available in 60 seconds.")
+
+
+@pytest.fixture(scope="session")
+def neo4j_service():
+    # Healthcheck for neo4j
+    deadline = time.time() + 60
+    while time.time() < deadline:
+        try:
+            driver = GraphDatabase.driver("bolt://localhost:7688", auth=("neo4j", "StrongPass123"))
+            driver.verify_connectivity()
+            driver.close()
+            break
+        except Exception:
+            time.sleep(1)
+    else:
+        pytest.fail("Neo4j did not become available in 60 seconds.")
